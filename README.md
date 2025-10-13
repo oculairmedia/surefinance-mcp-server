@@ -51,34 +51,31 @@ bundle exec ruby lib/surefinance_mcp.rb
 
 ```bash
 # Build and run with Docker Compose
-docker-compose up -d
+docker compose up --build -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f surefinance-mcp
 ```
 
-## MCP Tools
+### Environment
 
-### Account Tools
-- `get_accounts` - List all accounts with current balances
-- `get_account_balance_history` - Time series balance data for charts
+The server uses `.env` for configuration. Review `.env.example` for available options covering server host/port, database connection, authentication secrets, and logging.
 
-### Transaction Tools
-- `get_transactions` - Query transactions with filters
-- `search_transactions` - Full-text search across transactions
+## MCP Surface Area
 
-### Budget Tools
-- `get_budgets` - List budgets with spending analysis
+### Tools
+- `get_accounts` — list all accounts with current balances
+- `get_account_balance_history` — provide balance history for charting
+- `get_transactions` — query transactions with optional filters
+- `search_transactions` — perform keyword search across transactions
+- `get_budgets` — return budgets with period analysis
+- `get_categories` — list categories and hierarchy
 
-### Category Tools
-- `get_categories` - List transaction categories and hierarchies
-
-## MCP Resources
-
-- `surefinance://accounts/{id}` - Account details with balance history
-- `surefinance://transactions/{id}` - Transaction details
-- `surefinance://budgets/{id}` - Budget details with spending breakdown
-- `surefinance://holdings/{id}` - Investment holding details
+### Resources
+- `surefinance://accounts/{id}` — account details and balance history
+- `surefinance://transactions/{id}` — transaction details
+- `surefinance://budgets/{id}` — budget details and spending breakdown
+- `surefinance://holdings/{id}` — investment holding details
 
 ## Authentication
 

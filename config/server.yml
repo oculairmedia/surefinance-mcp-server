@@ -1,0 +1,15 @@
+default: &default
+  host: <%= ENV.fetch("MCP_SERVER_HOST", "0.0.0.0") %>
+  port: <%= ENV.fetch("MCP_SERVER_PORT", 3500).to_i %>
+  environment: <%= ENV.fetch("MCP_SERVER_ENV", "development") %>
+  log_level: <%= ENV.fetch("LOG_LEVEL", "info") %>
+  log_format: <%= ENV.fetch("LOG_FORMAT", "json") %>
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default
