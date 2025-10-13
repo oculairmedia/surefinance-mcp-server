@@ -56,11 +56,9 @@ module SurefinanceMCP
         name: "surefinance-mcp",
         version: DEFAULT_VERSION,
         path_prefix: "/mcp",
-        logger: server_logger
+        logger: server_logger,
+        localhost_only: false
       ) do |mcp_server|
-        # Store server context in a class variable so tools can access it
-        SurefinanceMCP::Tools::BaseTool.server_context = server_context
-
         # Register all tools
         Tools::AccountsTools.new.tools.each do |tool_class|
           mcp_server.register_tool(tool_class)

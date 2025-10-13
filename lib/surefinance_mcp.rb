@@ -15,6 +15,8 @@ module SurefinanceMCP
     end
 
     def start
+      # Inject server_context into BaseTool before server boots
+      SurefinanceMCP::Tools::BaseTool.server_context = server.server_context
       server.start
     end
 
