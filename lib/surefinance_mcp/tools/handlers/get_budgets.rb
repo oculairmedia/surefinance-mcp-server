@@ -3,32 +3,34 @@
 module SurefinanceMCP
   module Tools
     module Handlers
-      class GetBudgets
-        def initialize(logger: SurefinanceMCP.logger)
-          @logger = logger
+      class GetBudgets < FastMcp::Tool
+        include SurefinanceMCP::Tools::BaseTool
+
+        description "List all budgets with amounts for a specific period"
+
+        arguments do
+          optional(:period).filled(:string).description("Budget period (e.g., 'monthly', 'yearly', default: 'monthly')")
         end
 
-        def call(context)
-          family_id = context.fetch(:auth).fetch(:family_id)
-          period = context.dig(:arguments, :period) || "monthly"
-          budgets = Models::Budget.for_family(family_id).includes(:budget_periods)
+        def call(period: "monthly")
+          budgets = Models::Budget
+            .for_family(server_context[:family_id])
+            .includes(:budget_periods)
 
-          budgets.map do |budget|
-            period_data = budget.budget_periods.find_by(period: period)
-            {
-              id: budget.id,
-              name: budget.name,
-              amount: period_data&.amount
-            }
-          end
+          {
+            budgets: budgets.map do |budget|
+              period_data = budget.budget_periods.find_by(period: period)
+              {
+                id: budget.id,
+                name: budget.name,
+                amount: period_data&.amount
+              }
+            end
+          }
         rescue StandardError => e
           logger.error("Failed to fetch budgets: #{e.message}")
           raise
         end
-
-        private
-
-        attr_reader :logger
       end
     end
   end

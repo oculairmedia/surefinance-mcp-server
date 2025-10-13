@@ -3,32 +3,32 @@
 module SurefinanceMCP
   module Tools
     module Handlers
-      class GetCategories
-        def initialize(logger: SurefinanceMCP.logger)
-          @logger = logger
+      class GetCategories < FastMcp::Tool
+        include SurefinanceMCP::Tools::BaseTool
+
+        description "List all transaction categories with optional parent filter"
+
+        arguments do
+          optional(:parent_id).filled(:string).description("Filter by parent category ID (omit to list all categories)")
         end
 
-        def call(context)
-          family_id = context.fetch(:auth).fetch(:family_id)
-          parent_id = context.dig(:arguments, :parent_id)
-          scope = Models::Category.for_family(family_id)
+        def call(parent_id: nil)
+          scope = Models::Category.for_family(server_context[:family_id])
           scope = scope.where(parent_id: parent_id) if parent_id
 
-          scope.order(:name).map do |category|
-            {
-              id: category.id,
-              name: category.name,
-              parent_id: category.parent_id
-            }
-          end
+          {
+            categories: scope.order(:name).map do |category|
+              {
+                id: category.id,
+                name: category.name,
+                parent_id: category.parent_id
+              }
+            end
+          }
         rescue StandardError => e
           logger.error("Failed to fetch categories: #{e.message}")
           raise
         end
-
-        private
-
-        attr_reader :logger
       end
     end
   end

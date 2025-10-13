@@ -3,14 +3,21 @@
 module SurefinanceMCP
   module Tools
     module Handlers
-      class GetAccounts
-        def initialize(logger: SurefinanceMCP.logger)
-          @logger = logger
+      class GetAccounts < FastMcp::Tool
+        include SurefinanceMCP::Tools::BaseTool
+
+        description "List all accounts with current balances"
+
+        arguments do
+          optional(:updated_since).filled(:string).description("Filter accounts updated after this timestamp (ISO 8601)")
         end
 
-        def call(context)
-          family_id = context.fetch(:auth).fetch(:family_id)
-          accounts = Models::Account.for_family(family_id).visible
+        def call(updated_since: nil)
+          accounts = Models::Account
+            .for_family(server_context[:family_id])
+            .visible
+
+          accounts = accounts.where("updated_at > ?", updated_since) if updated_since
 
           {
             accounts: accounts.order(:name).map do |account|
@@ -22,14 +29,7 @@ module SurefinanceMCP
               }
             end
           }
-        rescue StandardError => e
-          logger.error("Failed to fetch accounts: #{e.message}")
-          raise
         end
-
-        private
-
-        attr_reader :logger
       end
     end
   end

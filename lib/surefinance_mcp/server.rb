@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "mcp"
+require "fast_mcp"
 require "rack"
 require "rackup"
 require "puma"
@@ -12,68 +12,24 @@ require_relative "authentication"
 require_relative "authentication/rate_limiter"
 require_relative "database"
 require_relative "models"
-require_relative "tools/registry"
-require_relative "tools/http_handler"
-require_relative "resources/registry"
-require_relative "resources/http_handler"
 
 module SurefinanceMCP
   class Server
+    DEFAULT_VERSION = "1.0.0"
+
     def initialize(logger: SurefinanceMCP.logger)
       @logger = logger
       @config = Config.load_server_config
-      @tool_registry = Tools::Registry.new(logger: @logger)
-      @resource_registry = Resources::Registry.new(logger: @logger)
       @authenticator = Authentication.build(logger: @logger)
       @database = Database.build(logger: @logger)
+      @context = build_server_context
+      @mcp_server = FastMcp::Server.new(name: "surefinance-mcp", version: DEFAULT_VERSION)
     end
 
     def start
-      @logger.info("Starting SureFinance MCP server on #{host}:#{port}")
+      logger.info("Starting SureFinance MCP server on #{host}:#{port}")
 
-      server_logger = @logger
-      server_authenticator = @authenticator
-      server_tool_handler = tool_handler
-      server_resource_handler = resource_handler
-      server_unauthorized = method(:unauthorized_response)
-
-      app = Rack::Builder.new do
-        use Rack::CommonLogger, server_logger
-        use Rack::ContentType, "application/json"
-        Authentication::RateLimiter.configure!(self)
-
-        run lambda { |env|
-          request = Rack::Request.new(env)
-
-          # No authentication required - single user mode
-          # Use the family_id from environment or default
-          family_id = ENV.fetch("DEFAULT_FAMILY_ID", "87925f63-2ee1-46f8-bebd-ddab3b26e0cd")
-          auth_context = { type: :none, family_id: family_id }
-
-          env["authenticated_family_id"] = auth_context[:family_id]
-
-          # Route based on path - MCP HTTP transport uses /mcp endpoint
-          path = request.path
-
-          # Handle /mcp prefix - strip it and route based on remaining path
-          if path.start_with?("/mcp")
-            # Remove /mcp prefix for routing logic
-            stripped_path = path.sub(%r{^/mcp}, "")
-            stripped_path = "/" if stripped_path.empty?
-
-            # Determine handler based on stripped path
-            if stripped_path.start_with?("/resources")
-              server_resource_handler.call(request, auth_context)
-            else
-              server_tool_handler.call(request, auth_context)
-            end
-          elsif path.start_with?("/resources")
-            server_resource_handler.call(request, auth_context)
-          else
-            server_tool_handler.call(request, auth_context)
-          end
-        }
-      end
+      Authentication::RateLimiter.configure!(rack_builder)
 
       Puma::Server.new(app).tap do |server|
         server.add_tcp_listener(host, port)
@@ -81,9 +37,41 @@ module SurefinanceMCP
       end
     end
 
+    def app
+      @app ||= rack_builder.to_app
+    end
+
+    def register_tool(tool_class)
+      mcp_server.register_tool(tool_class)
+    end
+
+    def server_context
+      context
+    end
+
     private
 
-    attr_reader :logger, :tool_registry, :resource_registry, :authenticator, :database, :config
+    attr_reader :logger, :authenticator, :database, :config, :mcp_server, :context
+
+    def rack_builder
+      server_logger = logger
+      server_mcp_server = mcp_server
+
+      @rack_builder ||= Rack::Builder.new do
+        use Rack::CommonLogger, server_logger
+        use Rack::ContentType, "application/json"
+
+        map "/mcp" do
+          run FastMcp::RackAdapter.new(server: server_mcp_server)
+        end
+
+        map "/health" do
+          run lambda { |_env|
+            [200, { "Content-Type" => "application/json" }, [JSON.dump({ status: "ok" })]]
+          }
+        end
+      end
+    end
 
     def host
       config.fetch("host")
@@ -93,30 +81,13 @@ module SurefinanceMCP
       config.fetch("port")
     end
 
-    def tool_handler
-      @tool_handler ||= Tools::HttpHandler.new(
-        registry: tool_registry,
-        authenticator: authenticator,
+    def build_server_context
+      {
+        logger: logger,
         database: database,
-        logger: logger
-      )
-    end
-
-    def resource_handler
-      @resource_handler ||= Resources::HttpHandler.new(
-        registry: resource_registry,
         authenticator: authenticator,
-        database: database,
-        logger: logger
-      )
-    end
-
-    def unauthorized_response
-      [
-        401,
-        { "Content-Type" => "application/json" },
-        [JSON.dump({ error: "Unauthorized" })]
-      ]
+        family_id: ENV.fetch("DEFAULT_FAMILY_ID", "87925f63-2ee1-46f8-bebd-ddab3b26e0cd")
+      }
     end
   end
 end
