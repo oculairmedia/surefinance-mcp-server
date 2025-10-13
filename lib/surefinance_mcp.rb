@@ -15,7 +15,6 @@ module SurefinanceMCP
     end
 
     def start
-      register_tools
       server.start
     end
 
@@ -24,13 +23,6 @@ module SurefinanceMCP
     end
 
     private
-
-
-    def register_tools
-      Tools::AccountsTools.new.tools.each do |tool_class|
-        server.register_tool(tool_class)
-      end
-    end
 
     def log_level
       level = ENV.fetch("LOG_LEVEL", "info").to_s.downcase

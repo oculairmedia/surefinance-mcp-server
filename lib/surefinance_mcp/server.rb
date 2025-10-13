@@ -23,13 +23,10 @@ module SurefinanceMCP
       @authenticator = Authentication.build(logger: @logger)
       @database = Database.build(logger: @logger)
       @context = build_server_context
-      @mcp_server = FastMcp::Server.new(name: "surefinance-mcp", version: DEFAULT_VERSION)
     end
 
     def start
       logger.info("Starting SureFinance MCP server on #{host}:#{port}")
-
-      Authentication::RateLimiter.configure!(rack_builder)
 
       Puma::Server.new(app).tap do |server|
         server.add_tcp_listener(host, port)
@@ -38,11 +35,7 @@ module SurefinanceMCP
     end
 
     def app
-      @app ||= rack_builder.to_app
-    end
-
-    def register_tool(tool_class)
-      mcp_server.register_tool(tool_class)
+      @app ||= build_app
     end
 
     def server_context
@@ -51,26 +44,42 @@ module SurefinanceMCP
 
     private
 
-    attr_reader :logger, :authenticator, :database, :config, :mcp_server, :context
+    attr_reader :logger, :authenticator, :database, :config, :context
 
-    def rack_builder
+    def build_app
       server_logger = logger
-      server_mcp_server = mcp_server
+      server_context = context
 
-      @rack_builder ||= Rack::Builder.new do
-        use Rack::CommonLogger, server_logger
-        use Rack::ContentType, "application/json"
+      # Use FastMcp.rack_middleware to create the app
+      FastMcp.rack_middleware(
+        health_app,
+        name: "surefinance-mcp",
+        version: DEFAULT_VERSION,
+        path_prefix: "/mcp",
+        logger: server_logger
+      ) do |mcp_server|
+        # Store server context in a class variable so tools can access it
+        SurefinanceMCP::Tools::BaseTool.server_context = server_context
 
-        map "/mcp" do
-          run FastMcp::RackAdapter.new(server: server_mcp_server)
+        # Register all tools
+        Tools::AccountsTools.new.tools.each do |tool_class|
+          mcp_server.register_tool(tool_class)
         end
+      end
+    end
 
+    def health_app
+      Rack::Builder.new do
         map "/health" do
           run lambda { |_env|
             [200, { "Content-Type" => "application/json" }, [JSON.dump({ status: "ok" })]]
           }
         end
-      end
+
+        run lambda { |_env|
+          [404, { "Content-Type" => "application/json" }, [JSON.dump({ error: "Not Found" })]]
+        }
+      end.to_app
     end
 
     def host
