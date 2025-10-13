@@ -3,6 +3,7 @@
 require "bundler/setup"
 require "dotenv/load"
 require "logger"
+require_relative "surefinance_mcp/errors"
 require_relative "surefinance_mcp/server"
 require_relative "surefinance_mcp/models"
 
@@ -52,3 +53,6 @@ module SurefinanceMCP
     end
   end
 end
+
+# Start the server when this file is run directly
+SurefinanceMCP.start if __FILE__ == $PROGRAM_NAME

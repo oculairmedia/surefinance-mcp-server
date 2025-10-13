@@ -4,12 +4,14 @@ source "https://rubygems.org"
 
 ruby "3.4.4"
 
-# MCP SDK
-gem "mcp", git: "https://github.com/modelcontextprotocol/ruby-sdk.git", branch: "main"
+# MCP SDK - fast-mcp for HTTP transport
+gem "fast-mcp", git: "https://github.com/yjacquin/fast-mcp.git"
 
 # Web server
+gem "rack", "~> 3.1"
 gem "rackup", "~> 2.2"
 gem "puma", "~> 6.5"
+gem "rack-attack", "~> 6.7"
 
 # Database (for connecting to SureFinance DB)
 gem "pg", "~> 1.5"
@@ -17,6 +19,9 @@ gem "activerecord", "~> 8.0"
 
 # JSON handling
 gem "oj", "~> 3.16"
+
+# Authentication
+gem "jwt", "~> 2.10"
 
 # Environment variables
 gem "dotenv", "~> 3.1"

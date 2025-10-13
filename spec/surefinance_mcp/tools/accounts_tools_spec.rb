@@ -10,6 +10,7 @@ RSpec.describe SurefinanceMCP::Tools::AccountsTools do
       tool = accounts_tools.tools.find { |t| t.name == "get_accounts" }
       expect(tool).not_to be_nil
       expect(tool.parameters[:properties]).to include(:updated_since)
+      expect(tool.handler).to respond_to(:call)
     end
   end
 end

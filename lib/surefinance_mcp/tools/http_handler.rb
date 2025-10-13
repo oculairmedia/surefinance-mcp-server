@@ -10,8 +10,9 @@ module SurefinanceMCP
         @logger = logger
       end
 
-      def call(request)
-        return unauthorized unless authenticated?(request)
+      def call(request, auth_context = nil)
+        @auth_context = auth_context || authenticator.authenticate(request)
+        return unauthorized unless @auth_context
 
         case request.request_method
         when "GET"
@@ -27,10 +28,6 @@ module SurefinanceMCP
 
       attr_reader :registry, :authenticator, :database, :logger
 
-      def authenticated?(request)
-        @auth_context = authenticator.authenticate(request)
-      end
-
       def list_tools
         response(200, { tools: registry.list })
       end
@@ -41,17 +38,18 @@ module SurefinanceMCP
         arguments = payload.fetch("arguments", {})
 
         tool = registry.find_tool(tool_name)
-        raise MCP::Errors::NotFound, "Tool not found" unless tool
+        unless tool
+          return response(404, { error: "Tool not found: #{tool_name}" })
+        end
 
         result = tool.call(arguments: symbolize_keys(arguments), auth: @auth_context)
         response(200, result)
-      rescue MCP::Errors::NotFound => e
-        response(404, { error: e.message })
-      rescue JSON::ParserError
-        response(400, { error: "Invalid JSON payload" })
+      rescue JSON::ParserError => e
+        response(400, { error: "Invalid JSON payload: #{e.message}" })
       rescue StandardError => e
         logger.error("Tool invocation failed: #{e.message}")
-        response(500, { error: "Internal server error" })
+        logger.error(e.backtrace.join("\n"))
+        response(500, { error: "Internal server error: #{e.message}" })
       end
 
       def parse_json(body)
@@ -76,4 +74,3 @@ module SurefinanceMCP
     end
   end
 end
-}

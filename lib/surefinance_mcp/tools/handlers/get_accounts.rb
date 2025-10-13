@@ -9,10 +9,11 @@ module SurefinanceMCP
         end
 
         def call(context)
-          accounts = Models::Account.all
+          family_id = context.fetch(:auth).fetch(:family_id)
+          accounts = Models::Account.for_family(family_id).visible
 
           {
-            accounts: accounts.map do |account|
+            accounts: accounts.order(:name).map do |account|
               {
                 id: account.id,
                 name: account.name,

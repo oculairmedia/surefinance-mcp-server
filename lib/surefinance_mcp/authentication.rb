@@ -2,6 +2,7 @@
 
 require_relative "authentication/api_key_strategy"
 require_relative "authentication/jwt_strategy"
+require_relative "authentication/composite"
 
 module SurefinanceMCP
   module Authentication
@@ -14,27 +15,6 @@ module SurefinanceMCP
       ]
 
       Composite.new(strategies: strategies, logger: logger)
-    end
-
-    class Composite
-      def initialize(strategies:, logger: SurefinanceMCP.logger)
-        @strategies = strategies
-        @logger = logger
-      end
-
-      def authenticate(request)
-        strategies.each do |strategy|
-          result = strategy.authenticate(request)
-          return result if result
-        end
-
-        logger.warn("Authentication failed for request: #{request.path}")
-        nil
-      end
-
-      private
-
-      attr_reader :strategies, :logger
     end
   end
 end

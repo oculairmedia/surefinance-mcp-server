@@ -10,8 +10,9 @@ module SurefinanceMCP
         @logger = logger
       end
 
-      def call(request)
-        return unauthorized unless authenticated?(request)
+      def call(request, auth_context = nil)
+        @auth_context = auth_context || authenticator.authenticate(request)
+        return unauthorized unless @auth_context
 
         case request.request_method
         when "GET"
@@ -29,10 +30,6 @@ module SurefinanceMCP
 
       attr_reader :registry, :authenticator, :database, :logger
 
-      def authenticated?(request)
-        @auth_context = authenticator.authenticate(request)
-      end
-
       def list_resources
         response(200, { resources: registry.list })
       end
@@ -40,11 +37,11 @@ module SurefinanceMCP
       def resolve_resource(request)
         uri = URI(request.params["uri"] || request.path)
         resource = registry.find(uri)
-        raise MCP::Errors::NotFound, "Resource not found" unless resource
+        raise SurefinanceMCP::Errors::NotFound, "Resource not found" unless resource
 
         result = resource.call(uri, auth: @auth_context)
         response(200, result)
-      rescue MCP::Errors::NotFound => e
+      rescue SurefinanceMCP::Errors::NotFound => e
         response(404, { error: e.message })
       rescue StandardError => e
         logger.error("Resource resolution failed: #{e.message}")

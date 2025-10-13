@@ -9,8 +9,9 @@ module SurefinanceMCP
         end
 
         def call(context)
+          family_id = context.fetch(:auth).fetch(:family_id)
           period = context.dig(:arguments, :period) || "monthly"
-          budgets = Models::Budget.includes(:budget_periods)
+          budgets = Models::Budget.for_family(family_id).includes(:budget_periods)
 
           budgets.map do |budget|
             period_data = budget.budget_periods.find_by(period: period)

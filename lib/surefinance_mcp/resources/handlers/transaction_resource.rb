@@ -16,8 +16,9 @@ module SurefinanceMCP
         end
 
         def call(uri, _context)
+          family_id = _context.fetch(:auth).fetch(:family_id)
           transaction_id = uri.path.split("/").last
-          transaction = Models::Transaction.find(transaction_id)
+          transaction = Models::Transaction.for_family(family_id).find(transaction_id)
 
           {
             id: transaction.id,
@@ -28,7 +29,7 @@ module SurefinanceMCP
             category: transaction.category_name
           }
         rescue ActiveRecord::RecordNotFound
-          raise MCP::Errors::NotFound, "Transaction not found"
+          raise SurefinanceMCP::Errors::NotFound, "Transaction not found"
         rescue StandardError => e
           logger.error("Failed to fetch transaction resource: #{e.message}")
           raise

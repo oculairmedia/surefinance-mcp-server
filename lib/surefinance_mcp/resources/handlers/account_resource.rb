@@ -16,8 +16,9 @@ module SurefinanceMCP
         end
 
         def call(uri, _context)
+          family_id = _context.fetch(:auth).fetch(:family_id)
           account_id = uri.path.split("/").last
-          account = Models::Account.find(account_id)
+          account = Models::Account.find_for_family!(family_id, account_id)
           history = Models::AccountBalanceHistory.for_account(account.id, "90d")
 
           {
@@ -33,7 +34,7 @@ module SurefinanceMCP
             end
           }
         rescue ActiveRecord::RecordNotFound
-          raise MCP::Errors::NotFound, "Account not found"
+          raise SurefinanceMCP::Errors::NotFound, "Account not found"
         rescue StandardError => e
           logger.error("Failed to fetch account resource: #{e.message}")
           raise

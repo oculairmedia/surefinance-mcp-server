@@ -2,10 +2,13 @@
 
 module SurefinanceMCP
   module Models
-    class Budget < ActiveRecord::Base
+    class Budget < ApplicationRecord
+      include Concerns::FamilyScoped
+
       self.table_name = "budgets"
 
-      has_many :budget_periods
+      belongs_to :family
+      has_many :budget_periods, dependent: :destroy
     end
   end
 end

@@ -11,6 +11,7 @@ RSpec.describe SurefinanceMCP::Resources::Registry do
       resource = registry.find(uri)
       expect(resource).not_to be_nil
       expect(resource.description).to include("Account")
+      expect(resource.scheme).to eq("surefinance")
     end
   end
 end

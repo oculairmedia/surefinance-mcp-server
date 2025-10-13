@@ -30,4 +30,3 @@ module SurefinanceMCP
     end
   end
 end
-}

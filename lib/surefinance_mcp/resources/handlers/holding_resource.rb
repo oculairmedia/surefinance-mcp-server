@@ -16,8 +16,9 @@ module SurefinanceMCP
         end
 
         def call(uri, _context)
+          family_id = _context.fetch(:auth).fetch(:family_id)
           holding_id = uri.path.split("/").last
-          holding = Models::Holding.find(holding_id)
+          holding = Models::Holding.for_family(family_id).find(holding_id)
 
           {
             id: holding.id,
@@ -27,7 +28,7 @@ module SurefinanceMCP
             market_value: holding.market_value
           }
         rescue ActiveRecord::RecordNotFound
-          raise MCP::Errors::NotFound, "Holding not found"
+          raise SurefinanceMCP::Errors::NotFound, "Holding not found"
         rescue StandardError => e
           logger.error("Failed to fetch holding resource: #{e.message}")
           raise

@@ -2,8 +2,10 @@
 
 module SurefinanceMCP
   module Models
-    class AccountBalanceHistory < ActiveRecord::Base
+    class AccountBalanceHistory < ApplicationRecord
       self.table_name = "account_balances"
+
+      belongs_to :account
 
       scope :for_account, lambda { |account_id, range|
         window_start = case range

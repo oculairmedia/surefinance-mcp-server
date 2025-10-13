@@ -16,8 +16,9 @@ module SurefinanceMCP
         end
 
         def call(uri, _context)
+          family_id = _context.fetch(:auth).fetch(:family_id)
           budget_id = uri.path.split("/").last
-          budget = Models::Budget.find(budget_id)
+          budget = Models::Budget.find_for_family!(family_id, budget_id)
           periods = budget.budget_periods
 
           {
@@ -32,7 +33,7 @@ module SurefinanceMCP
             end
           }
         rescue ActiveRecord::RecordNotFound
-          raise MCP::Errors::NotFound, "Budget not found"
+          raise SurefinanceMCP::Errors::NotFound, "Budget not found"
         rescue StandardError => e
           logger.error("Failed to fetch budget resource: #{e.message}")
           raise

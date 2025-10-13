@@ -4,7 +4,7 @@ FROM ruby:3.4.4-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache build-base libpq-dev
+RUN apk add --no-cache build-base libpq-dev git yaml-dev
 
 COPY Gemfile Gemfile.lock .
 RUN bundle install
