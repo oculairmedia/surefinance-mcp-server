@@ -29,6 +29,11 @@ module SurefinanceMCP
 
         # rubocop:disable Lint/UnusedMethodArgument
         def call(action:, idempotency_key: nil, **args)
+          # Check if RecurringSeries table exists
+          unless ActiveRecord::Base.connection.table_exists?("recurring_series")
+            return { ok: false, error: { type: "not_implemented", code: "recurring.not_implemented", message: "Recurring transactions feature is not yet available" } }
+          end
+
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
           Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do

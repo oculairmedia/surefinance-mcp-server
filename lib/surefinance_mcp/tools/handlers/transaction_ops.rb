@@ -139,7 +139,7 @@ module SurefinanceMCP
 
           ActiveRecord::Base.transaction do
             assign_and_save(transaction_record, updates)
-            entry = transaction_record.entry || transaction_record.entries.first
+            entry = transaction_record.entry
             if entry
               entry.assign_attributes(entry_updates)
               entry.save!
@@ -156,7 +156,8 @@ module SurefinanceMCP
           ensure_family_access!(transaction_record, family_id)
 
           ActiveRecord::Base.transaction do
-            transaction_record.entries.destroy_all
+            entry = transaction_record.entry
+            entry.destroy! if entry
             transaction_record.destroy!
           end
 
@@ -172,7 +173,7 @@ module SurefinanceMCP
           transaction_record = Models::Transaction.find(id)
           ensure_family_access!(transaction_record, family_id)
 
-          parent_entry = transaction_record.entry || transaction_record.entries.first
+          parent_entry = transaction_record.entry
           raise ArgumentError, "Transaction has no entry to split" unless parent_entry
 
           parent_amount = parent_entry.amount.to_f
@@ -258,7 +259,7 @@ module SurefinanceMCP
         end
 
         def ensure_family_access!(transaction_record, family_id)
-          entry = transaction_record.entry || transaction_record.entries.first
+          entry = transaction_record.entry
           raise ActiveRecord::RecordNotFound, "Transaction has no associated entry" unless entry
           raise ActiveRecord::RecordNotFound, "Transaction not in family" unless entry.account.family_id == family_id
         end
@@ -282,7 +283,7 @@ module SurefinanceMCP
         end
 
         def serialize_transaction(record, entry: nil)
-          entry ||= record.entry || record.entries.first
+          entry ||= record.entry
           {
             id: record.id,
             account_id: entry&.account_id,
@@ -294,7 +295,13 @@ module SurefinanceMCP
         end
 
         def serialize_transaction_children(parent)
-          parent.entries.includes(:entryable).map do |entry|
+          parent_entry = parent.entry
+          return [] unless parent_entry&.transfer_id
+
+          # Find all entries in the same transfer (splits)
+          Models::Entry.where(transfer_id: parent_entry.transfer_id)
+                       .includes(:entryable)
+                       .map do |entry|
             entryable = entry.entryable
             next unless entryable.is_a?(Models::Transaction) && entryable != parent
 

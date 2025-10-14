@@ -26,9 +26,9 @@ module SurefinanceMCP
           optional(:id).value(:string).description("Holding/Tag/Rule ID (required for update/delete operations)")
           optional(:account_id).value(:string).description("Account ID (required for create_holding)")
           optional(:security_id).value(:string).description("Security ID (optional for create_holding)")
-          optional(:quantity).value(:float).description("Holding quantity (optional for create/update_holding)")
-          optional(:price).value(:float).description("Holding price (optional for create/update_holding)")
-          optional(:amount).value(:float).description("Holding amount (optional for create/update_holding)")
+          optional(:quantity).filled.description("Holding quantity (optional for create/update_holding)")
+          optional(:price).filled.description("Holding price (optional for create/update_holding)")
+          optional(:amount).filled.description("Holding amount (optional for create/update_holding)")
           optional(:currency).value(:string).description("Currency code (optional for create/update_holding)")
           optional(:date).value(:string).description("Holding date ISO 8601 (optional for create/update_holding)")
           optional(:name).value(:string).description("Tag/Rule name (required for create_tag, optional for update_rule)")
@@ -188,7 +188,7 @@ module SurefinanceMCP
         end
 
         def ensure_transaction_family!(transaction, family_id)
-          entry = transaction.entry || transaction.entries.first
+          entry = transaction.entry
           raise ActiveRecord::RecordNotFound unless entry&.account&.family_id == family_id
         end
 
