@@ -17,6 +17,22 @@ module SurefinanceMCP
   class Server
     DEFAULT_VERSION = "1.0.0"
 
+    # Apply monkey-patches once at class load time
+    unless defined?(@patches_applied)
+      # Monkey-patch FastMcp::Server to return responses for HTTP transport
+      FastMcp::Server.class_eval do
+        alias_method :original_send_response, :send_response unless method_defined?(:original_send_response)
+
+        def send_response(response)
+          original_send_response(response)
+          # Return the JSON string for HTTP transport (Rack::Test)
+          [JSON.generate(response)]
+        end
+      end
+
+      @patches_applied = true
+    end
+
     def initialize(logger: SurefinanceMCP.logger)
       @logger = logger
       @config = Config.load_server_config
@@ -55,9 +71,11 @@ module SurefinanceMCP
         health_app,
         name: "surefinance-mcp",
         version: DEFAULT_VERSION,
-        path_prefix: "/mcp",
+        path_prefix: "",  # No prefix, so endpoint is directly at /mcp
+        messages_route: "mcp",  # Route is "mcp", making full path /mcp
         logger: server_logger,
-        localhost_only: false
+        localhost_only: false,
+        allowed_origins: []  # Allow all origins (empty array disables origin checking)
       ) do |mcp_server|
         # Register all tools
         Tools::AccountsTools.new.tools.each do |tool_class|
