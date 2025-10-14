@@ -61,12 +61,18 @@ module SurefinanceMCP
             end
           end
         rescue ActiveRecord::RecordNotFound => e
-          { ok: false, error: { type: "not_found", code: "asset.not_found", message: e.message } }
+          not_found_error(e.message)
+        rescue ActiveRecord::RecordInvalid => e
+          validation_error(
+            "#{action.gsub('_', ' ').capitalize} failed",
+            e.record.errors.messages
+          )
         rescue ArgumentError => e
-          { ok: false, error: { type: "validation_error", code: "asset.invalid", message: e.message } }
+          validation_error(e.message)
         rescue StandardError => e
           logger.error("asset_ops error: #{e.class} #{e.message}")
-          { ok: false, error: { type: "internal", code: "asset.internal", message: "Internal error" } }
+          logger.error(e.backtrace.join("\n")) if e.backtrace
+          internal_error("An unexpected error occurred")
         ensure
           # rubocop:enable Lint/UnusedMethodArgument
         end
@@ -75,14 +81,35 @@ module SurefinanceMCP
 
         def create_holding(payload)
           family_id = server_context[:family_id]
-          account = Models::Account.find_for_family!(family_id, payload.fetch(:account_id))
+
+          # Validate required fields
+          unless payload[:account_id]
+            raise ArgumentError, "account_id is required"
+          end
+
+          # Find account (raises RecordNotFound if not found)
+          account = Models::Account.find_for_family!(family_id, payload[:account_id])
+
+          # Create holding
           holding = Models::Holding.new(account_id: account.id)
           assign_if_column(holding, :security_id, payload[:security_id])
           assign_if_column(holding, :qty, payload[:quantity])
           assign_if_column(holding, :currency, payload[:currency])
           assign_if_column(holding, :price, payload[:price])
           assign_if_column(holding, :amount, payload[:amount])
-          assign_if_column(holding, :date, parse_date(payload[:date]) || Date.today)
+
+          # Parse date with error handling
+          if payload[:date]
+            begin
+              holding_date = parse_date(payload[:date])
+              assign_if_column(holding, :date, holding_date)
+            rescue ArgumentError, Date::Error => e
+              raise ArgumentError, "Invalid date format: #{e.message}"
+            end
+          else
+            assign_if_column(holding, :date, Date.today)
+          end
+
           holding.save!
           { ok: true, result: { holding: serialize_holding(holding) } }
         end
