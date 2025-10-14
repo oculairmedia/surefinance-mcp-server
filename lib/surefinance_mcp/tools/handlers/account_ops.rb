@@ -23,11 +23,11 @@ module SurefinanceMCP
           optional(:name).value(:string).description("Account name (required for create, optional for update)")
           optional(:type).value(:string).description("Account type (required for create, optional for update)")
           optional(:currency).value(:string).description("Currency code (optional for create/update)")
-          optional(:opening_balance).value(:float).description("Opening balance (optional for create)")
+          optional(:opening_balance).description("Opening balance (optional for create)")
           optional(:opened_on).value(:string).description("Opened date ISO 8601 (optional for create)")
           optional(:closed_on).value(:string).description("Closed date ISO 8601 (optional for close)")
           optional(:statement_date).value(:string).description("Statement date ISO 8601 (required for reconcile)")
-          optional(:statement_balance).value(:float).description("Statement balance (required for reconcile)")
+          optional(:statement_balance).description("Statement balance (required for reconcile)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
@@ -48,14 +48,18 @@ module SurefinanceMCP
             end
           end
         rescue ActiveRecord::RecordNotFound => e
-          { ok: false, error: { type: "not_found", code: "account.not_found", message: e.message } }
+          not_found_error(e.message)
         rescue ActiveRecord::RecordInvalid => e
-          { ok: false, error: { type: "validation_error", code: "account.invalid", message: e.record.errors.full_messages.join(", ") } }
+          validation_error(
+            "Account validation failed",
+            e.record.errors.messages
+          )
         rescue ArgumentError => e
-          { ok: false, error: { type: "validation_error", code: "account.invalid", message: e.message } }
+          validation_error(e.message)
         rescue StandardError => e
           logger.error("account_ops error: #{e.class} #{e.message}")
-          { ok: false, error: { type: "internal", code: "account.internal", message: "Internal error" } }
+          logger.error(e.backtrace.join("\n")) if e.backtrace
+          internal_error("An unexpected error occurred")
         ensure
           # rubocop:enable Lint/UnusedMethodArgument
         end
@@ -73,8 +77,12 @@ module SurefinanceMCP
           family = Models::Family.find(family_id)
           currency = payload[:currency] || family.currency
 
-          # Default balance to 0 if not provided
-          balance = payload[:opening_balance] || 0
+          # Coerce opening_balance to decimal (accepts integers, floats, strings)
+          balance = if payload[:opening_balance]
+                      coerce_decimal(payload[:opening_balance], field_name: "opening_balance")
+                    else
+                      0
+                    end
 
           # Validate accountable type
           unless Accountable::TYPES.include?(type)
@@ -134,7 +142,7 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           id = payload.fetch(:id)
           statement_date = parse_date(payload.fetch(:statement_date))
-          statement_balance = payload.fetch(:statement_balance)
+          statement_balance = coerce_decimal(payload.fetch(:statement_balance), field_name: "statement_balance")
 
           account = Models::Account.find_for_family!(family_id, id)
 

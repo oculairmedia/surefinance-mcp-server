@@ -52,6 +52,7 @@ module FastMcp
         end
       end
     end
+
   end
 end
 puts "=== FastMcp::Tool patched successfully ==="

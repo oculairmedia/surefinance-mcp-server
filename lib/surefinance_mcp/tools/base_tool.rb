@@ -67,6 +67,27 @@ module SurefinanceMCP
           message: message
         )
       end
+
+      # Numeric coercion helper - accepts integers, floats, and numeric strings
+      def coerce_decimal(value, field_name: nil)
+        return nil if value.nil?
+
+        # Already a numeric type
+        return BigDecimal(value.to_s) if value.is_a?(Numeric)
+
+        # String conversion
+        if value.is_a?(String)
+          cleaned = value.strip
+          return nil if cleaned.empty?
+          return BigDecimal(cleaned)
+        end
+
+        # Try to convert other types
+        BigDecimal(value.to_s)
+      rescue ArgumentError, TypeError => e
+        field_label = field_name ? " for #{field_name}" : ""
+        raise ArgumentError, "Invalid numeric value#{field_label}: #{value.inspect}"
+      end
     end
   end
 end
