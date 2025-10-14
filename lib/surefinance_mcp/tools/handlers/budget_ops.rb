@@ -18,32 +18,29 @@ module SurefinanceMCP
         description "Manage budgets: create, update, delete, assign/remove categories, progress (family scoped)"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:id).value(:string).description("Budget ID (required for update/delete/progress)")
-            optional(:start_date).value(:string).description("Start date ISO 8601 (optional for create)")
-            optional(:month).value(:string).description("Month in format 'Oct-2025' (optional for create)")
-            optional(:budgeted_spending).value(:float).description("Budgeted spending amount (optional for update/assign_category)")
-            optional(:expected_income).value(:float).description("Expected income amount (optional for update)")
-            optional(:budget_id).value(:string).description("Budget ID (required for assign_category/remove_category)")
-            optional(:category_id).value(:string).description("Category ID (required for assign_category/remove_category)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, delete, assign_category, remove_category, progress")
+          optional(:id).value(:string).description("Budget ID (required for update/delete/progress)")
+          optional(:start_date).value(:string).description("Start date ISO 8601 (optional for create)")
+          optional(:month).value(:string).description("Month in format 'Oct-2025' (optional for create)")
+          optional(:budgeted_spending).value(:float).description("Budgeted spending amount (optional for update/assign_category)")
+          optional(:expected_income).value(:float).description("Expected income amount (optional for update)")
+          optional(:budget_id).value(:string).description("Budget ID (required for assign_category/remove_category)")
+          optional(:category_id).value(:string).description("Category ID (required for assign_category/remove_category)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create" then create_budget(payload)
-              when "update" then update_budget(payload)
-              when "delete" then delete_budget(payload)
-              when "assign_category" then assign_category(payload)
-              when "remove_category" then remove_category(payload)
-              when "progress" then budget_progress(payload)
+              when "create" then create_budget(args)
+              when "update" then update_budget(args)
+              when "delete" then delete_budget(args)
+              when "assign_category" then assign_category(args)
+              when "remove_category" then remove_category(args)
+              when "progress" then budget_progress(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end

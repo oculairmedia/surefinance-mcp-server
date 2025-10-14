@@ -16,26 +16,23 @@ module SurefinanceMCP
         description "Manage simple transaction rules (create/update/delete/run)"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:id).value(:string).description("Rule ID (required for update/delete/run)")
-            optional(:name).value(:string).description("Rule name (required for create, optional for update)")
-            optional(:description).value(:string).description("Rule description (optional for create/update)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, delete, run")
+          optional(:id).value(:string).description("Rule ID (required for update/delete/run)")
+          optional(:name).value(:string).description("Rule name (required for create, optional for update)")
+          optional(:description).value(:string).description("Rule description (optional for create/update)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create" then create_rule(payload)
-              when "update" then update_rule(payload)
-              when "delete" then delete_rule(payload)
-              when "run" then run_rule(payload)
+              when "create" then create_rule(args)
+              when "update" then update_rule(args)
+              when "delete" then delete_rule(args)
+              when "run" then run_rule(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end

@@ -18,26 +18,23 @@ module SurefinanceMCP
         description "Create zero-sum transfers between two accounts (family scoped)"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:from_account_id).value(:string).description("Source account ID (required for create)")
-            optional(:to_account_id).value(:string).description("Destination account ID (required for create)")
-            optional(:amount).value(:float).description("Transfer amount (required for create)")
-            optional(:date).value(:string).description("Transfer date ISO 8601 (optional for create)")
-            optional(:memo).value(:string).description("Transfer memo (optional for create)")
-            optional(:description).value(:string).description("Transfer description (optional for create)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create")
+          optional(:from_account_id).value(:string).description("Source account ID (required for create)")
+          optional(:to_account_id).value(:string).description("Destination account ID (required for create)")
+          optional(:amount).value(:float).description("Transfer amount (required for create)")
+          optional(:date).value(:string).description("Transfer date ISO 8601 (optional for create)")
+          optional(:memo).value(:string).description("Transfer memo (optional for create)")
+          optional(:description).value(:string).description("Transfer description (optional for create)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create" then create_transfer(payload)
+              when "create" then create_transfer(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end

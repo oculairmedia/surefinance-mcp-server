@@ -18,33 +18,30 @@ module SurefinanceMCP
         description "Manage accounts: create, update, close, reopen, reconcile balances (family scoped)"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:id).value(:string).description("Account ID (required for update/close/reopen/reconcile)")
-            optional(:name).value(:string).description("Account name (required for create, optional for update)")
-            optional(:type).value(:string).description("Account type (required for create, optional for update)")
-            optional(:currency).value(:string).description("Currency code (optional for create/update)")
-            optional(:opening_balance).value(:float).description("Opening balance (optional for create)")
-            optional(:opened_on).value(:string).description("Opened date ISO 8601 (optional for create)")
-            optional(:closed_on).value(:string).description("Closed date ISO 8601 (optional for close)")
-            optional(:statement_date).value(:string).description("Statement date ISO 8601 (required for reconcile)")
-            optional(:statement_balance).value(:float).description("Statement balance (required for reconcile)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, close, reopen, reconcile")
+          optional(:id).value(:string).description("Account ID (required for update/close/reopen/reconcile)")
+          optional(:name).value(:string).description("Account name (required for create, optional for update)")
+          optional(:type).value(:string).description("Account type (required for create, optional for update)")
+          optional(:currency).value(:string).description("Currency code (optional for create/update)")
+          optional(:opening_balance).value(:float).description("Opening balance (optional for create)")
+          optional(:opened_on).value(:string).description("Opened date ISO 8601 (optional for create)")
+          optional(:closed_on).value(:string).description("Closed date ISO 8601 (optional for close)")
+          optional(:statement_date).value(:string).description("Statement date ISO 8601 (required for reconcile)")
+          optional(:statement_balance).value(:float).description("Statement balance (required for reconcile)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create" then create_account(payload)
-              when "update" then update_account(payload)
-              when "close" then close_account(payload)
-              when "reopen" then reopen_account(payload)
-              when "reconcile" then reconcile_account(payload)
+              when "create" then create_account(args)
+              when "update" then update_account(args)
+              when "close" then close_account(args)
+              when "reopen" then reopen_account(args)
+              when "reconcile" then reconcile_account(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end

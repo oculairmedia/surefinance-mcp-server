@@ -19,37 +19,34 @@ module SurefinanceMCP
         description "Manage transactions: CRUD, splits, categorization, clearing (family scoped)"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:id).value(:string).description("Transaction ID (required for update/delete/split/categorize/set_cleared)")
-            optional(:account_id).value(:string).description("Account ID (required for create)")
-            optional(:amount).value(:float).description("Transaction amount (required for create, optional for update)")
-            optional(:date).value(:string).description("Transaction date ISO 8601 (optional for create/update)")
-            optional(:category_id).value(:string).description("Category ID (optional for create/update/categorize/bulk_categorize)")
-            optional(:memo).value(:string).description("Transaction memo (optional for create/update)")
-            optional(:merchant).value(:string).description("Merchant name (optional for create/update)")
-            optional(:description).value(:string).description("Transaction description (optional for create/update)")
-            optional(:splits).value(:array).description("Array of split objects (required for split action)")
-            optional(:ids).value(:array).description("Array of transaction IDs (required for bulk_categorize)")
-            optional(:cleared).value(:bool).description("Cleared status (required for set_cleared)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, delete, split, categorize, bulk_categorize, set_cleared")
+          optional(:id).value(:string).description("Transaction ID (required for update/delete/split/categorize/set_cleared)")
+          optional(:account_id).value(:string).description("Account ID (required for create)")
+          optional(:amount).value(:float).description("Transaction amount (required for create, optional for update)")
+          optional(:date).value(:string).description("Transaction date ISO 8601 (optional for create/update)")
+          optional(:category_id).value(:string).description("Category ID (optional for create/update/categorize/bulk_categorize)")
+          optional(:memo).value(:string).description("Transaction memo (optional for create/update)")
+          optional(:merchant).value(:string).description("Merchant name (optional for create/update)")
+          optional(:description).value(:string).description("Transaction description (optional for create/update)")
+          optional(:splits).value(:array).description("Array of split objects (required for split action)")
+          optional(:ids).value(:array).description("Array of transaction IDs (required for bulk_categorize)")
+          optional(:cleared).value(:bool).description("Cleared status (required for set_cleared)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create" then create_transaction(payload)
-              when "update" then update_transaction(payload)
-              when "delete" then delete_transaction(payload)
-              when "split" then split_transaction(payload)
-              when "categorize" then categorize_transaction(payload)
-              when "bulk_categorize" then bulk_categorize(payload)
-              when "set_cleared" then set_cleared(payload)
+              when "create" then create_transaction(args)
+              when "update" then update_transaction(args)
+              when "delete" then delete_transaction(args)
+              when "split" then split_transaction(args)
+              when "categorize" then categorize_transaction(args)
+              when "bulk_categorize" then bulk_categorize(args)
+              when "set_cleared" then set_cleared(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end

@@ -17,34 +17,31 @@ module SurefinanceMCP
         description "Manage categories: create, update, move, delete, merge (family scoped)"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:id).value(:string).description("Category ID (required for update/move/delete)")
-            optional(:name).value(:string).description("Category name (required for create)")
-            optional(:classification).value(:string).description("Classification: income or expense (required for create)")
-            optional(:parent_id).value(:string).description("Parent category ID (optional for create/move)")
-            optional(:lucide_icon).value(:string).description("Lucide icon name (optional for create/update)")
-            optional(:color).value(:string).description("Hex color code (optional for create/update root categories)")
-            optional(:new_parent_id).value(:string).description("New parent ID (required for move)")
-            optional(:replacement_category_id).value(:string).description("Replacement category ID (optional for delete)")
-            optional(:source_id).value(:string).description("Source category ID (required for merge)")
-            optional(:target_id).value(:string).description("Target category ID (required for merge)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, move, delete, merge")
+          optional(:id).value(:string).description("Category ID (required for update/move/delete)")
+          optional(:name).value(:string).description("Category name (required for create)")
+          optional(:classification).value(:string).description("Classification: income or expense (required for create)")
+          optional(:parent_id).value(:string).description("Parent category ID (optional for create/move)")
+          optional(:lucide_icon).value(:string).description("Lucide icon name (optional for create/update)")
+          optional(:color).value(:string).description("Hex color code (optional for create/update root categories)")
+          optional(:new_parent_id).value(:string).description("New parent ID (required for move)")
+          optional(:replacement_category_id).value(:string).description("Replacement category ID (optional for delete)")
+          optional(:source_id).value(:string).description("Source category ID (required for merge)")
+          optional(:target_id).value(:string).description("Target category ID (required for merge)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create" then create_category(payload)
-              when "update" then update_category(payload)
-              when "move"   then move_category(payload)
-              when "delete" then delete_category(payload)
-              when "merge"  then merge_categories(payload)
+              when "create" then create_category(args)
+              when "update" then update_category(args)
+              when "move"   then move_category(args)
+              when "delete" then delete_category(args)
+              when "merge"  then merge_categories(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end

@@ -18,29 +18,26 @@ module SurefinanceMCP
         description "Manage recurring transaction series"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:id).value(:string).description("Series ID (required for update/cancel/generate_occurrences)")
-            optional(:name).value(:string).description("Series name (required for create, optional for update)")
-            optional(:cadence).value(:string).description("Recurrence cadence: weekly/biweekly/monthly/quarterly/yearly (required for create, optional for update)")
-            optional(:starts_on).value(:string).description("Start date ISO 8601 (optional for create/update)")
-            optional(:ends_on).value(:string).description("End date ISO 8601 (optional for create/update)")
-            optional(:until_date).value(:string).description("Generate until date ISO 8601 (optional for generate_occurrences)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, cancel, generate_occurrences")
+          optional(:id).value(:string).description("Series ID (required for update/cancel/generate_occurrences)")
+          optional(:name).value(:string).description("Series name (required for create, optional for update)")
+          optional(:cadence).value(:string).description("Recurrence cadence: weekly/biweekly/monthly/quarterly/yearly (required for create, optional for update)")
+          optional(:starts_on).value(:string).description("Start date ISO 8601 (optional for create/update)")
+          optional(:ends_on).value(:string).description("End date ISO 8601 (optional for create/update)")
+          optional(:until_date).value(:string).description("Generate until date ISO 8601 (optional for generate_occurrences)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create" then create_series(payload)
-              when "update" then update_series(payload)
-              when "cancel" then cancel_series(payload)
-              when "generate_occurrences" then generate_occurrences(payload)
+              when "create" then create_series(args)
+              when "update" then update_series(args)
+              when "cancel" then cancel_series(args)
+              when "generate_occurrences" then generate_occurrences(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end

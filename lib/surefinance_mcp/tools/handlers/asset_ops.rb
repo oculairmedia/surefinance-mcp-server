@@ -22,42 +22,39 @@ module SurefinanceMCP
         description "Manage holdings, tags, and simple transaction rules"
 
         arguments do
-          required(:action).value(:string).value(included_in?: ACTIONS)
-          required(:payload).value(:hash).hash do
-            optional(:id).value(:string).description("Holding/Tag/Rule ID (required for update/delete operations)")
-            optional(:account_id).value(:string).description("Account ID (required for create_holding)")
-            optional(:security_id).value(:string).description("Security ID (optional for create_holding)")
-            optional(:quantity).value(:float).description("Holding quantity (optional for create/update_holding)")
-            optional(:price).value(:float).description("Holding price (optional for create/update_holding)")
-            optional(:amount).value(:float).description("Holding amount (optional for create/update_holding)")
-            optional(:currency).value(:string).description("Currency code (optional for create/update_holding)")
-            optional(:date).value(:string).description("Holding date ISO 8601 (optional for create/update_holding)")
-            optional(:name).value(:string).description("Tag/Rule name (required for create_tag, optional for update_rule)")
-            optional(:color).value(:string).description("Tag color (optional for create_tag)")
-            optional(:transaction_id).value(:string).description("Transaction ID (required for assign_tag/remove_tag)")
-            optional(:tag_id).value(:string).description("Tag ID (required for assign_tag/remove_tag)")
-          end
-          optional(:idempotency_key).value(:string)
+          required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: holdings, tags, or rules management")
+          optional(:id).value(:string).description("Holding/Tag/Rule ID (required for update/delete operations)")
+          optional(:account_id).value(:string).description("Account ID (required for create_holding)")
+          optional(:security_id).value(:string).description("Security ID (optional for create_holding)")
+          optional(:quantity).value(:float).description("Holding quantity (optional for create/update_holding)")
+          optional(:price).value(:float).description("Holding price (optional for create/update_holding)")
+          optional(:amount).value(:float).description("Holding amount (optional for create/update_holding)")
+          optional(:currency).value(:string).description("Currency code (optional for create/update_holding)")
+          optional(:date).value(:string).description("Holding date ISO 8601 (optional for create/update_holding)")
+          optional(:name).value(:string).description("Tag/Rule name (required for create_tag, optional for update_rule)")
+          optional(:color).value(:string).description("Tag color (optional for create_tag)")
+          optional(:transaction_id).value(:string).description("Transaction ID (required for assign_tag/remove_tag)")
+          optional(:tag_id).value(:string).description("Tag ID (required for assign_tag/remove_tag)")
         end
 
         # rubocop:disable Lint/UnusedMethodArgument
-        def call(action:, payload:, idempotency_key: nil)
+        def call(action:, idempotency_key: nil, **args)
           family_id = server_context[:family_id]
           tool_name = self.class.tool_name
-          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: payload) do
+          Tools::AuditWrapper.with_audit(tool: tool_name, action: action, family_id: family_id, params: args) do
             Tools::Idempotency.with_idempotency(tool: tool_name, key: idempotency_key.to_s, family_id: family_id) do
               case action
-              when "create_holding" then create_holding(payload)
-              when "update_holding" then update_holding(payload)
-              when "delete_holding" then delete_holding(payload)
-              when "create_tag" then create_tag(payload)
-              when "delete_tag" then delete_tag(payload)
-              when "assign_tag" then assign_tag(payload)
-              when "remove_tag" then remove_tag(payload)
-              when "create_rule" then create_rule(payload)
-              when "update_rule" then update_rule(payload)
-              when "delete_rule" then delete_rule(payload)
-              when "run_rule" then run_rule(payload)
+              when "create_holding" then create_holding(args)
+              when "update_holding" then update_holding(args)
+              when "delete_holding" then delete_holding(args)
+              when "create_tag" then create_tag(args)
+              when "delete_tag" then delete_tag(args)
+              when "assign_tag" then assign_tag(args)
+              when "remove_tag" then remove_tag(args)
+              when "create_rule" then create_rule(args)
+              when "update_rule" then update_rule(args)
+              when "delete_rule" then delete_rule(args)
+              when "run_rule" then run_rule(args)
               else
                 raise ArgumentError, "Unsupported action: #{action}"
               end
