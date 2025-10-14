@@ -13,7 +13,7 @@ module SurefinanceMCP
         description "List all accounts with current balances"
 
         arguments do
-          optional(:updated_since).filled(:string).description("Filter accounts updated after this timestamp (ISO 8601)")
+          optional(:updated_since).value(:string).description("Filter accounts updated after this timestamp (ISO 8601)")
         end
 
         def call(updated_since: nil)

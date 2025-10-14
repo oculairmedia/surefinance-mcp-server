@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "date"
+
 module SurefinanceMCP
   module Models
     class Family < ApplicationRecord
@@ -13,6 +15,10 @@ module SurefinanceMCP
       has_many :budgets, dependent: :destroy
 
       validates :name, presence: true
+
+      def oldest_entry_date
+        entries.minimum(:date) || Date.current
+      end
     end
   end
 end

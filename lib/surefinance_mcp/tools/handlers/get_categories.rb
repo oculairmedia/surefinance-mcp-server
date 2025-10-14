@@ -13,7 +13,7 @@ module SurefinanceMCP
         description "List all transaction categories with optional parent filter"
 
         arguments do
-          optional(:parent_id).filled(:string).description("Filter by parent category ID (omit to list all categories)")
+          optional(:parent_id).value(:string).description("Filter by parent category ID (omit to list all categories)")
         end
 
         def call(parent_id: nil)

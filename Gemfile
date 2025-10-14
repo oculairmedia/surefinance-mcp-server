@@ -29,6 +29,7 @@ gem "dotenv", "~> 3.1"
 group :development, :test do
   gem "debug", "~> 1.9"
   gem "rspec", "~> 3.13"
+  gem "rack-test", "~> 2.1"
   gem "rubocop", "~> 1.69", require: false
   gem "rubocop-rspec", "~> 3.3", require: false
 end

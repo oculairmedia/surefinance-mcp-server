@@ -13,7 +13,7 @@ module SurefinanceMCP
         description "List all budgets with amounts for a specific period"
 
         arguments do
-          optional(:period).filled(:string).description("Budget period (e.g., 'monthly', 'yearly', default: 'monthly')")
+          optional(:period).value(:string).description("Budget period (e.g., 'monthly', 'yearly', default: 'monthly')")
         end
 
         def call(period: "monthly")

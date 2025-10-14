@@ -1,17 +1,25 @@
 # frozen_string_literal: true
 
+puts "=== SureFinance MCP Server Starting ==="
+$stdout.flush
+
 require "bundler/setup"
 require "dotenv/load"
 require "logger"
 require_relative "surefinance_mcp/errors"
 require_relative "surefinance_mcp/server"
 require_relative "surefinance_mcp/models"
+require_relative "surefinance_mcp/tools/audit_wrapper"
+require_relative "surefinance_mcp/tools/idempotency"
 require_relative "surefinance_mcp/tools/accounts_tools"
 
 module SurefinanceMCP
   class << self
     def logger
-      @logger ||= Logger.new($stdout, level: log_level, formatter: log_formatter)
+      @logger ||= begin
+        $stdout.sync = true  # Force immediate flushing
+        Logger.new($stdout, level: log_level, formatter: log_formatter)
+      end
     end
 
     def start

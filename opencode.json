@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "surefinance-mcp": {
+      "type": "remote",
+      "url": "http://192.168.50.90:4332/mcp",
+      "enabled": true
+    }
+  }
+}

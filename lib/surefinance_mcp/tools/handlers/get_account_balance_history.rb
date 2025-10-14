@@ -13,8 +13,8 @@ module SurefinanceMCP
         description "Retrieve historical balance data for a specific account"
 
         arguments do
-          required(:account_id).filled(:string).description("Account ID to retrieve balance history for")
-          optional(:range).filled(:string).description("Time range for history (e.g., '90d', '1y', default: '90d')")
+          required(:account_id).value(:string).description("Account ID to retrieve balance history for")
+          optional(:range).value(:string).description("Time range for history (e.g., '90d', '1y', default: '90d')")
         end
 
         def call(account_id:, range: "90d")

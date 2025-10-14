@@ -13,9 +13,9 @@ module SurefinanceMCP
         description "Search transactions by description text with optional account filter"
 
         arguments do
-          required(:query).filled(:string).description("Search query to match against transaction descriptions")
-          optional(:account_id).filled(:string).description("Filter by account ID")
-          optional(:limit).filled(:integer).description("Maximum number of results to return (default: 50)")
+          required(:query).value(:string).description("Search query to match against transaction descriptions")
+          optional(:account_id).value(:string).description("Filter by account ID")
+          optional(:limit).value(:integer).description("Maximum number of results to return (default: 50)")
         end
 
         def call(query:, account_id: nil, limit: 50)

@@ -88,7 +88,10 @@ See [Authentication Guide](docs/authentication.md) for details.
 ## Development
 
 ```bash
-# Run tests
+# Run JSON-RPC integration tests
+bundle exec rspec spec/integration/mcp_server_spec.rb
+
+# Run full test suite
 bundle exec rspec
 
 # Run linter
