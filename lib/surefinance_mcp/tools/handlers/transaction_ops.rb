@@ -28,8 +28,14 @@ module SurefinanceMCP
           optional(:memo).value(:string).description("Transaction memo (optional for create/update)")
           optional(:merchant).value(:string).description("Merchant name (optional for create/update)")
           optional(:description).value(:string).description("Transaction description (optional for create/update)")
-          optional(:splits).value(:array).description("Array of split objects with amount, category_id, memo, date, description")
-          optional(:ids).value(:array).description("Array of transaction ID strings")
+          optional(:splits).array(:hash) do
+            optional(:amount).value(:float)
+            optional(:category_id).value(:string)
+            optional(:memo).value(:string)
+            optional(:date).value(:string)
+            optional(:description).value(:string)
+          end.description("Array of split objects (required for split action)")
+          optional(:ids).array(:string).description("Array of transaction ID strings")
           optional(:cleared).value(:bool).description("Cleared status (required for set_cleared)")
         end
 

@@ -8,6 +8,7 @@ require "dotenv/load"
 require "logger"
 require_relative "surefinance_mcp/errors"
 require_relative "surefinance_mcp/server"
+require_relative "surefinance_mcp/schema_patch"  # Patch array schemas for OpenAI compatibility (after FastMcp is loaded)
 require_relative "surefinance_mcp/models"
 require_relative "surefinance_mcp/tools/audit_wrapper"
 require_relative "surefinance_mcp/tools/idempotency"
