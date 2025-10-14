@@ -2,10 +2,11 @@
 
 module SurefinanceMCP
   module Models
-    class BudgetPeriod < ApplicationRecord
-      self.table_name = "budget_periods"
+    class BudgetCategory < ApplicationRecord
+      self.table_name = "budget_categories"
 
       belongs_to :budget
+      belongs_to :category
     end
   end
 end

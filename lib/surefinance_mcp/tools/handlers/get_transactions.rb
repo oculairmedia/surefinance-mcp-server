@@ -18,23 +18,23 @@ module SurefinanceMCP
         def call(account_id: nil, start_date: nil, end_date: nil, limit: 100)
           scope = Models::Transaction
             .for_family(server_context[:family_id])
-            .joins(:entry)
+            .select("transactions.*, entries.account_id as entry_account_id, entries.date as entry_date, entries.amount as entry_amount, entries.name as entry_name")
 
-          scope = scope.where(entries: { account_id: account_id }) if account_id
+          scope = scope.where("entries.account_id = ?", account_id) if account_id
           scope = scope.where("entries.date >= ?", start_date) if start_date
           scope = scope.where("entries.date <= ?", end_date) if end_date
 
           transactions = scope
             .order("entries.date DESC")
             .limit(limit)
-            .includes(:category, entry: :account)
+            .includes(:category)
             .map do |tx|
               {
                 id: tx.id,
-                account_id: tx.account_id,
-                date: tx.entry&.date&.iso8601,
-                amount: tx.amount,
-                description: tx.description,
+                account_id: tx[:entry_account_id],
+                date: tx[:entry_date]&.iso8601,
+                amount: tx[:entry_amount],
+                description: tx[:entry_name],
                 category: tx.category_name
               }
             end

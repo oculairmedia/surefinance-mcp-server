@@ -15,15 +15,26 @@ module SurefinanceMCP
         def call(period: "monthly")
           budgets = Models::Budget
             .for_family(server_context[:family_id])
-            .includes(:budget_periods)
+            .includes(:budget_categories, :categories)
+            .order(start_date: :desc)
+
+          filtered_budgets = if period && period != "all"
+            budgets.select { |b| b.period_type == period }
+          else
+            budgets
+          end
 
           {
-            budgets: budgets.map do |budget|
-              period_data = budget.budget_periods.find_by(period: period)
+            budgets: filtered_budgets.map do |budget|
               {
                 id: budget.id,
-                name: budget.name,
-                amount: period_data&.amount
+                start_date: budget.start_date.iso8601,
+                end_date: budget.end_date.iso8601,
+                period_type: budget.period_type,
+                budgeted_spending: budget.budgeted_spending,
+                expected_income: budget.expected_income,
+                currency: budget.currency,
+                category_count: budget.budget_categories.size
               }
             end
           }

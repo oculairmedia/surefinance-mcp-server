@@ -19,21 +19,22 @@ module SurefinanceMCP
 
           scope = Models::Transaction
             .for_family(server_context[:family_id])
-            .where("transactions.description ILIKE ?", "%#{query}%")
-            .joins(:entry)
+            .select("transactions.*, entries.account_id as entry_account_id, entries.date as entry_date, entries.amount as entry_amount, entries.name as entry_name")
+            .where("entries.name ILIKE ?", "%#{query}%")
 
-          scope = scope.where(entries: { account_id: account_id }) if account_id
+          scope = scope.where("entries.account_id = ?", account_id) if account_id
 
           transactions = scope
             .order("entries.date DESC")
             .limit(limit)
+            .includes(:category)
             .map do |tx|
               {
                 id: tx.id,
-                account_id: tx.entry&.account_id,
-                date: tx.entry&.date&.iso8601,
-                amount: tx.entry&.amount,
-                description: tx.description,
+                account_id: tx[:entry_account_id],
+                date: tx[:entry_date]&.iso8601,
+                amount: tx[:entry_amount],
+                description: tx[:entry_name],
                 category: tx.category_name
               }
             end

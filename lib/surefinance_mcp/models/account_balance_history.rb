@@ -3,7 +3,7 @@
 module SurefinanceMCP
   module Models
     class AccountBalanceHistory < ApplicationRecord
-      self.table_name = "account_balances"
+      self.table_name = "balances"
 
       belongs_to :account
 
