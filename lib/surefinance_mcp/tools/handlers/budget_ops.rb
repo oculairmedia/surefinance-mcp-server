@@ -47,14 +47,18 @@ module SurefinanceMCP
             end
           end
         rescue ActiveRecord::RecordNotFound => e
-          { ok: false, error: { type: "not_found", code: "budget.not_found", message: e.message } }
+          not_found_error(e.message)
         rescue ActiveRecord::RecordInvalid => e
-          { ok: false, error: { type: "validation_error", code: "budget.invalid", message: e.record.errors.full_messages.join(", ") } }
+          validation_error(
+            "Budget validation failed",
+            e.record.errors.messages
+          )
         rescue ArgumentError => e
-          { ok: false, error: { type: "validation_error", code: "budget.invalid", message: e.message } }
+          validation_error(e.message)
         rescue StandardError => e
           logger.error("budget_ops error: #{e.class} #{e.message}")
-          { ok: false, error: { type: "internal", code: "budget.internal", message: "Internal error" } }
+          logger.error(e.backtrace.join("\n")) if e.backtrace
+          internal_error("An unexpected error occurred")
         ensure
           # rubocop:enable Lint/UnusedMethodArgument
         end
@@ -191,10 +195,25 @@ module SurefinanceMCP
         # Helpers
         def parse_start_date(payload)
           if payload[:start_date]
-            Date.parse(payload[:start_date].to_s)
+            begin
+              Date.parse(payload[:start_date].to_s)
+            rescue ArgumentError, Date::Error => e
+              raise ArgumentError, "Invalid start_date format: #{e.message}"
+            end
           elsif payload[:month]
             # month expected in format like "Oct-2025" (Budget::PARAM_DATE_FORMAT)
-            Date.strptime(payload[:month].to_s, "%b-%Y")
+            month_str = payload[:month].to_s
+
+            # Validate format before parsing
+            unless month_str =~ /^[A-Z][a-z]{2}-\d{4}$/
+              raise ArgumentError, "Invalid month format. Expected format: 'Oct-2025', got: '#{month_str}'"
+            end
+
+            begin
+              Date.strptime(month_str, "%b-%Y")
+            rescue ArgumentError, Date::Error => e
+              raise ArgumentError, "Invalid month value: #{e.message}"
+            end
           else
             raise ArgumentError, "start_date or month is required"
           end
