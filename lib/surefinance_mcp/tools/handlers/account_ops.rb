@@ -64,23 +64,37 @@ module SurefinanceMCP
 
         def create_account(payload)
           family_id = server_context[:family_id]
-          name = payload.fetch(:name)
-          type = payload.fetch(:type)
-          currency = payload[:currency]
-          balance = payload[:opening_balance]
-          opened_on = payload[:opened_on]
 
-          account = Models::Account.new(
+          # Required fields validation
+          name = payload.fetch(:name) { raise ArgumentError, "name is required" }
+          type = payload.fetch(:type) { raise ArgumentError, "type is required" }
+
+          # Get family to use its currency as default
+          family = Models::Family.find(family_id)
+          currency = payload[:currency] || family.currency
+
+          # Default balance to 0 if not provided
+          balance = payload[:opening_balance] || 0
+
+          # Validate accountable type
+          unless Accountable::TYPES.include?(type)
+            raise ArgumentError, "Invalid account type: #{type}. Must be one of: #{Accountable::TYPES.join(', ')}"
+          end
+
+          # Build account attributes with required fields
+          attributes = {
             family_id: family_id,
-            name: name
-          )
-          assign_if_column(account, :currency, currency)
-          assign_if_column(account, :accountable_type, type)
-          assign_if_column(account, :balance, balance)
-          assign_if_column(account, :cash_balance, balance)
-          assign_if_column(account, :opened_on, parse_date(opened_on)) if opened_on
+            name: name,
+            balance: balance,
+            cash_balance: balance,
+            currency: currency,
+            accountable_type: type,
+            accountable_attributes: {} # Creates the accountable record
+          }
 
-          account.save!
+          attributes[:opened_on] = parse_date(payload[:opened_on]) if payload[:opened_on]
+
+          account = Models::Account.create!(attributes)
           { ok: true, result: { account: serialize_account(account) } }
         end
 

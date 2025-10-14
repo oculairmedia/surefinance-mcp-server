@@ -28,8 +28,8 @@ module SurefinanceMCP
           optional(:memo).value(:string).description("Transaction memo (optional for create/update)")
           optional(:merchant).value(:string).description("Merchant name (optional for create/update)")
           optional(:description).value(:string).description("Transaction description (optional for create/update)")
-          optional(:splits).value(:array).description("Array of split objects (required for split action)")
-          optional(:ids).value(:array).description("Array of transaction IDs (required for bulk_categorize)")
+          optional(:splits).value(:array).description("Array of split objects with amount, category_id, memo, date, description")
+          optional(:ids).value(:array).description("Array of transaction ID strings")
           optional(:cleared).value(:bool).description("Cleared status (required for set_cleared)")
         end
 
@@ -69,10 +69,17 @@ module SurefinanceMCP
 
         def create_transaction(payload)
           family_id = server_context[:family_id]
-          account = Models::Account.find_for_family!(family_id, payload.fetch(:account_id))
 
+          # Required fields validation
+          account_id = payload.fetch(:account_id) { raise ArgumentError, "account_id is required" }
+          amount = payload.fetch(:amount) { raise ArgumentError, "amount is required" }
+
+          account = Models::Account.find_for_family!(family_id, account_id)
+
+          # Required Entry fields with defaults
           entry_date = payload[:date] ? Date.parse(payload[:date].to_s) : Date.today
-          amount = payload.fetch(:amount)
+          entry_name = payload[:description] || "Transaction" # Entry.name is required
+          entry_currency = account.currency # Use account's currency
 
           ActiveRecord::Base.transaction do
             transaction_record = Models::Transaction.new
@@ -88,7 +95,8 @@ module SurefinanceMCP
               entryable: transaction_record,
               date: entry_date,
               amount: amount,
-              name: payload[:description]
+              name: entry_name,
+              currency: entry_currency
             )
             entry.save!
 
@@ -182,7 +190,8 @@ module SurefinanceMCP
                 entryable: child,
                 date: split[:date] ? Date.parse(split[:date].to_s) : parent_entry.date,
                 amount: split[:amount],
-                name: split[:description] || parent_entry.name
+                name: split[:description] || parent_entry.name,
+                currency: parent_entry.currency
               )
             end
           end
