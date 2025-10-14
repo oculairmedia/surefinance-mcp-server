@@ -22,14 +22,14 @@ module SurefinanceMCP
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, delete, split, categorize, bulk_categorize, set_cleared")
           optional(:id).value(:string).description("Transaction ID (required for update/delete/split/categorize/set_cleared)")
           optional(:account_id).value(:string).description("Account ID (required for create)")
-          optional(:amount).value(:float).description("Transaction amount (required for create, optional for update)")
+          optional(:amount).filled.description("Transaction amount (required for create, optional for update)")
           optional(:date).value(:string).description("Transaction date ISO 8601 (optional for create/update)")
           optional(:category_id).value(:string).description("Category ID (optional for create/update/categorize/bulk_categorize)")
           optional(:memo).value(:string).description("Transaction memo (optional for create/update)")
           optional(:merchant).value(:string).description("Merchant name (optional for create/update)")
           optional(:description).value(:string).description("Transaction description (optional for create/update)")
           optional(:splits).array(:hash) do
-            optional(:amount).value(:float)
+            optional(:amount).filled
             optional(:category_id).value(:string)
             optional(:memo).value(:string)
             optional(:date).value(:string)
@@ -78,7 +78,8 @@ module SurefinanceMCP
 
           # Required fields validation
           account_id = payload.fetch(:account_id) { raise ArgumentError, "account_id is required" }
-          amount = payload.fetch(:amount) { raise ArgumentError, "amount is required" }
+          raw_amount = payload.fetch(:amount) { raise ArgumentError, "amount is required" }
+          amount = coerce_decimal(raw_amount, field_name: "amount")
 
           account = Models::Account.find_for_family!(family_id, account_id)
 
@@ -127,7 +128,7 @@ module SurefinanceMCP
           updates[:memo] = payload[:memo] if payload.key?(:memo) && column?(Models::Transaction, :memo)
           updates[:merchant_name] = payload[:merchant] if payload.key?(:merchant) && column?(Models::Transaction, :merchant_name)
           if payload.key?(:amount)
-            amount = payload[:amount]
+            amount = coerce_decimal(payload[:amount], field_name: "amount")
             updates[:amount] = amount if column?(Models::Transaction, :amount)
             updates[:amount_cents] = to_cents(amount) if column?(Models::Transaction, :amount_cents)
             entry_updates[:amount] = amount
@@ -177,26 +178,31 @@ module SurefinanceMCP
           raise ArgumentError, "Transaction has no entry to split" unless parent_entry
 
           parent_amount = parent_entry.amount.to_f
-          total_splits = splits.sum { |s| s.fetch(:amount).to_f }
+          # Coerce split amounts to BigDecimal and calculate total
+          coerced_splits = splits.map do |s|
+            s.merge(coerced_amount: coerce_decimal(s.fetch(:amount), field_name: "split amount"))
+          end
+          total_splits = coerced_splits.sum { |s| s[:coerced_amount].to_f }
           unless (parent_amount - total_splits).abs < 0.01
             raise ArgumentError, "Split amounts must sum to parent amount"
           end
 
           ActiveRecord::Base.transaction do
             parent_entry.update!(amount: parent_amount)
-            splits.each do |split|
+            coerced_splits.each do |split|
+              split_amount = split[:coerced_amount]
               child = Models::Transaction.new
               assign_if_column(child, :category_id, split[:category_id]) if split[:category_id]
               assign_if_column(child, :memo, split[:memo]) if split.key?(:memo)
-              assign_if_column(child, :amount, split[:amount]) if column?(Models::Transaction, :amount)
-              assign_if_column(child, :amount_cents, to_cents(split[:amount])) if column?(Models::Transaction, :amount_cents)
+              assign_if_column(child, :amount, split_amount) if column?(Models::Transaction, :amount)
+              assign_if_column(child, :amount_cents, to_cents(split_amount)) if column?(Models::Transaction, :amount_cents)
               child.save!
 
               Models::Entry.create!(
                 account_id: parent_entry.account_id,
                 entryable: child,
                 date: split[:date] ? Date.parse(split[:date].to_s) : parent_entry.date,
-                amount: split[:amount],
+                amount: split_amount,
                 name: split[:description] || parent_entry.name,
                 currency: parent_entry.currency
               )

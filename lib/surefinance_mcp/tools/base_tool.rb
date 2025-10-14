@@ -88,6 +88,12 @@ module SurefinanceMCP
         field_label = field_name ? " for #{field_name}" : ""
         raise ArgumentError, "Invalid numeric value#{field_label}: #{value.inspect}"
       end
+
+      # Numeric serialization helper - converts BigDecimal/numeric values to float for JSON
+      def serialize_numeric(value)
+        return nil if value.nil?
+        value.to_f
+      end
     end
   end
 end

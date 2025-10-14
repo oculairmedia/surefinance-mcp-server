@@ -93,10 +93,11 @@ module SurefinanceMCP
           # Create holding
           holding = Models::Holding.new(account_id: account.id)
           assign_if_column(holding, :security_id, payload[:security_id])
-          assign_if_column(holding, :qty, payload[:quantity])
+          # Coerce numeric fields
+          assign_if_column(holding, :qty, coerce_decimal(payload[:quantity], field_name: "quantity")) if payload[:quantity]
           assign_if_column(holding, :currency, payload[:currency])
-          assign_if_column(holding, :price, payload[:price])
-          assign_if_column(holding, :amount, payload[:amount])
+          assign_if_column(holding, :price, coerce_decimal(payload[:price], field_name: "price")) if payload[:price]
+          assign_if_column(holding, :amount, coerce_decimal(payload[:amount], field_name: "amount")) if payload[:amount]
 
           # Parse date with error handling
           if payload[:date]
@@ -120,9 +121,9 @@ module SurefinanceMCP
           ensure_family_access!(holding, family_id)
 
           updates = {}
-          updates[:qty] = payload[:quantity] if payload.key?(:quantity)
-          updates[:price] = payload[:price] if payload.key?(:price)
-          updates[:amount] = payload[:amount] if payload.key?(:amount)
+          updates[:qty] = coerce_decimal(payload[:quantity], field_name: "quantity") if payload.key?(:quantity)
+          updates[:price] = coerce_decimal(payload[:price], field_name: "price") if payload.key?(:price)
+          updates[:amount] = coerce_decimal(payload[:amount], field_name: "amount") if payload.key?(:amount)
           updates[:currency] = payload[:currency] if payload.key?(:currency)
           updates[:date] = parse_date(payload[:date]) if payload.key?(:date)
           assign_and_save(holding, updates)

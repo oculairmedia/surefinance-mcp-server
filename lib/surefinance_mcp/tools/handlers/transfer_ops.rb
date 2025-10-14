@@ -21,7 +21,7 @@ module SurefinanceMCP
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create")
           optional(:from_account_id).value(:string).description("Source account ID (required for create)")
           optional(:to_account_id).value(:string).description("Destination account ID (required for create)")
-          optional(:amount).value(:float).description("Transfer amount (required for create)")
+          optional(:amount).filled.description("Transfer amount (required for create)")
           optional(:date).value(:string).description("Transfer date ISO 8601 (optional for create)")
           optional(:memo).value(:string).description("Transfer memo (optional for create)")
           optional(:description).value(:string).description("Transfer description (optional for create)")
@@ -57,7 +57,7 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           from_account = Models::Account.find_for_family!(family_id, payload.fetch(:from_account_id))
           to_account = Models::Account.find_for_family!(family_id, payload.fetch(:to_account_id))
-          amount = payload.fetch(:amount).to_f
+          amount = coerce_decimal(payload.fetch(:amount), field_name: "amount")
           raise ArgumentError, "Amount must be positive" unless amount.positive?
 
           date = payload[:date] ? Date.parse(payload[:date].to_s) : Date.today

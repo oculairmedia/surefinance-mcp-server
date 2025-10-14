@@ -22,8 +22,8 @@ module SurefinanceMCP
           optional(:id).value(:string).description("Budget ID (required for update/delete/progress)")
           optional(:start_date).value(:string).description("Start date ISO 8601 (optional for create)")
           optional(:month).value(:string).description("Month in format 'Oct-2025' (optional for create)")
-          optional(:budgeted_spending).value(:float).description("Budgeted spending amount (optional for update/assign_category)")
-          optional(:expected_income).value(:float).description("Expected income amount (optional for update)")
+          optional(:budgeted_spending).filled.description("Budgeted spending amount (optional for update/assign_category)")
+          optional(:expected_income).filled.description("Expected income amount (optional for update)")
           optional(:budget_id).value(:string).description("Budget ID (required for assign_category/remove_category)")
           optional(:category_id).value(:string).description("Category ID (required for assign_category/remove_category)")
         end
@@ -95,12 +95,14 @@ module SurefinanceMCP
 
           updates = {}
           if payload.key?(:budgeted_spending)
-            ensure_non_negative!(payload[:budgeted_spending], "budgeted_spending must be non-negative")
-            updates[:budgeted_spending] = payload[:budgeted_spending]
+            budgeted_spending = coerce_decimal(payload[:budgeted_spending], field_name: "budgeted_spending")
+            ensure_non_negative!(budgeted_spending, "budgeted_spending must be non-negative")
+            updates[:budgeted_spending] = budgeted_spending
           end
           if payload.key?(:expected_income)
-            ensure_non_negative!(payload[:expected_income], "expected_income must be non-negative")
-            updates[:expected_income] = payload[:expected_income]
+            expected_income = coerce_decimal(payload[:expected_income], field_name: "expected_income")
+            ensure_non_negative!(expected_income, "expected_income must be non-negative")
+            updates[:expected_income] = expected_income
           end
 
           assign_and_save(budget, updates)
@@ -121,7 +123,11 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           budget_id = payload.fetch(:budget_id)
           category_id = payload.fetch(:category_id)
-          budgeted_spending = payload[:budgeted_spending]
+
+          # Coerce budgeted_spending if present
+          budgeted_spending = if payload[:budgeted_spending]
+                                coerce_decimal(payload[:budgeted_spending], field_name: "budgeted_spending")
+                              end
 
           budget = Models::Budget.find_for_family!(family_id, budget_id)
           category = Models::Category.find_for_family!(family_id, category_id)
