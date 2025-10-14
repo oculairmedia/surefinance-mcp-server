@@ -10,6 +10,7 @@ module SurefinanceMCP
         include SurefinanceMCP::Tools::BaseTool
 
         ACTIONS = %w[create update close reopen reconcile].freeze
+        ACCOUNT_TYPES = %w[Depository Investment Liability OtherAsset OtherLiability Property CreditCard Loan].freeze
 
         def self.tool_name
           "account_ops"
@@ -85,8 +86,8 @@ module SurefinanceMCP
                     end
 
           # Validate accountable type
-          unless Accountable::TYPES.include?(type)
-            raise ArgumentError, "Invalid account type: #{type}. Must be one of: #{Accountable::TYPES.join(', ')}"
+          unless ACCOUNT_TYPES.include?(type)
+            raise ArgumentError, "Invalid account type: #{type}. Must be one of: #{ACCOUNT_TYPES.join(', ')}"
           end
 
           # Build account attributes with required fields
@@ -94,13 +95,13 @@ module SurefinanceMCP
             family_id: family_id,
             name: name,
             balance: balance,
-            cash_balance: balance,
-            currency: currency,
-            accountable_type: type,
-            accountable_attributes: {} # Creates the accountable record
+            currency: currency
           }
 
-          attributes[:opened_on] = parse_date(payload[:opened_on]) if payload[:opened_on]
+          # Add optional columns if they exist
+          assign_if_column_value(attributes, Models::Account, :cash_balance, balance)
+          assign_if_column_value(attributes, Models::Account, :accountable_type, type)
+          assign_if_column_value(attributes, Models::Account, :opened_on, parse_date(payload[:opened_on])) if payload[:opened_on]
 
           account = Models::Account.create!(attributes)
           { ok: true, result: { account: serialize_account(account) } }
@@ -157,6 +158,10 @@ module SurefinanceMCP
         def assign_if_column(record, attr, value)
           return unless column?(record.class, attr)
           record.send(:"#{attr}=", value)
+        end
+
+        def assign_if_column_value(hash, ar_class, attr, value)
+          hash[attr] = value if column?(ar_class, attr)
         end
 
         def assign_and_save(record, attrs)
