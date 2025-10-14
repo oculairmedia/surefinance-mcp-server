@@ -6,6 +6,10 @@ module SurefinanceMCP
       class GetAccounts < FastMcp::Tool
         include SurefinanceMCP::Tools::BaseTool
 
+        def self.tool_name
+          "show_accounts"
+        end
+
         description "List all accounts with current balances"
 
         arguments do

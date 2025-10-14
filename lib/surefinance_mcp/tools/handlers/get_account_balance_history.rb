@@ -6,6 +6,10 @@ module SurefinanceMCP
       class GetAccountBalanceHistory < FastMcp::Tool
         include SurefinanceMCP::Tools::BaseTool
 
+        def self.tool_name
+          "show_balance_history"
+        end
+
         description "Retrieve historical balance data for a specific account"
 
         arguments do

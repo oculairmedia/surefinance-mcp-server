@@ -6,6 +6,10 @@ module SurefinanceMCP
       class GetBudgets < FastMcp::Tool
         include SurefinanceMCP::Tools::BaseTool
 
+        def self.tool_name
+          "show_budgets"
+        end
+
         description "List all budgets with amounts for a specific period"
 
         arguments do

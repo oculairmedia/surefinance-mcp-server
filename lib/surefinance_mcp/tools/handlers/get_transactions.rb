@@ -6,6 +6,10 @@ module SurefinanceMCP
       class GetTransactions < FastMcp::Tool
         include SurefinanceMCP::Tools::BaseTool
 
+        def self.tool_name
+          "list_transactions"
+        end
+
         description "Retrieve transactions with optional filters for account, date range, and limit"
 
         arguments do

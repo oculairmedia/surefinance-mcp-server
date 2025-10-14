@@ -6,6 +6,10 @@ module SurefinanceMCP
       class SearchTransactions < FastMcp::Tool
         include SurefinanceMCP::Tools::BaseTool
 
+        def self.tool_name
+          "find_transactions"
+        end
+
         description "Search transactions by description text with optional account filter"
 
         arguments do

@@ -6,6 +6,10 @@ module SurefinanceMCP
       class GetCategories < FastMcp::Tool
         include SurefinanceMCP::Tools::BaseTool
 
+        def self.tool_name
+          "list_categories"
+        end
+
         description "List all transaction categories with optional parent filter"
 
         arguments do
