@@ -118,8 +118,9 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           id = payload.fetch(:id)
           budget = Models::Budget.find_for_family!(family_id, id)
+          resource_id = budget.id
           budget.destroy!
-          { ok: true, result: { destroyed: true } }
+          { ok: true, result: { deleted: true, resource_id: resource_id, resource_type: "budget" } }
         end
 
         # ASSIGN CATEGORY
@@ -166,8 +167,9 @@ module SurefinanceMCP
           bc = Models::BudgetCategory.where(budget_id: budget.id, category_id: category_id).first
           raise ActiveRecord::RecordNotFound, "BudgetCategory not found" unless bc
 
+          resource_id = bc.id
           bc.destroy!
-          { ok: true, result: { removed: true } }
+          { ok: true, result: { removed: true, resource_id: resource_id, resource_type: "budget_category" } }
         end
 
         # PROGRESS

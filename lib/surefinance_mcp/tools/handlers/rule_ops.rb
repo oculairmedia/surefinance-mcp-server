@@ -82,8 +82,9 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           rule = Models::Rule.find(payload.fetch(:id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
+          resource_id = rule.id
           rule.destroy!
-          { ok: true, result: { deleted: true } }
+          { ok: true, result: { deleted: true, resource_id: resource_id, resource_type: "rule" } }
         end
 
         def run_rule(payload)

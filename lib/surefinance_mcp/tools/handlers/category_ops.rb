@@ -231,7 +231,7 @@ module SurefinanceMCP
             record.destroy!
           end
 
-          { ok: true, result: { destroyed: true, reassigned_count: moved_txns } }
+          { ok: true, result: { deleted: true, resource_id: id, resource_type: "category", reassigned_count: moved_txns } }
         end
 
         def merge_categories(payload)

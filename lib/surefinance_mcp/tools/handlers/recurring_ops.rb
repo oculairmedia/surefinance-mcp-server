@@ -93,8 +93,9 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           series = Models::RecurringSeries.find(payload.fetch(:id))
           raise ActiveRecord::RecordNotFound unless series.family_id == family_id
+          resource_id = series.id
           assign_and_save(series, { canceled: true }) if column?(Models::RecurringSeries, :canceled)
-          { ok: true, result: { cancelled: true } }
+          { ok: true, result: { cancelled: true, resource_id: resource_id, resource_type: "recurring_series" } }
         end
 
         def generate_occurrences(payload)

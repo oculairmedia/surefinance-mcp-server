@@ -135,8 +135,9 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           holding = Models::Holding.find(payload.fetch(:id))
           ensure_family_access!(holding, family_id)
+          resource_id = holding.id
           holding.destroy!
-          { ok: true, result: { deleted: true } }
+          { ok: true, result: { deleted: true, resource_id: resource_id, resource_type: "holding" } }
         end
 
         def create_tag(payload)
@@ -151,8 +152,9 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           tag = Models::Tag.find(payload.fetch(:id))
           raise ActiveRecord::RecordNotFound unless tag.family_id == family_id
+          resource_id = tag.id
           tag.destroy!
-          { ok: true, result: { deleted: true } }
+          { ok: true, result: { deleted: true, resource_id: resource_id, resource_type: "tag" } }
         end
 
         def assign_tag(payload)
@@ -199,8 +201,9 @@ module SurefinanceMCP
           family_id = server_context[:family_id]
           rule = Models::Rule.find(payload.fetch(:id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
+          resource_id = rule.id
           rule.destroy!
-          { ok: true, result: { deleted: true } }
+          { ok: true, result: { deleted: true, resource_id: resource_id, resource_type: "rule" } }
         end
 
         def run_rule(payload)

@@ -74,7 +74,7 @@ module SurefinanceMCP
           transaction = Models::Transaction.find(payload.fetch(:transaction_id))
           ensure_transaction_family!(transaction, family_id)
 
-          { ok: true, result: { removed: true } }
+          { ok: true, result: { removed: true, resource_id: payload.fetch(:transaction_id), resource_type: "attachment" } }
         end
 
         def ensure_transaction_family!(transaction, family_id)

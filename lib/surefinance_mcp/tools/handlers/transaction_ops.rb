@@ -162,7 +162,7 @@ module SurefinanceMCP
             transaction_record.destroy!
           end
 
-          { ok: true, result: { deleted: true } }
+          { ok: true, result: { deleted: true, resource_id: id, resource_type: "transaction" } }
         end
 
         def split_transaction(payload)
