@@ -20,7 +20,7 @@ module SurefinanceMCP
 
         arguments do
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, delete, split, categorize, bulk_categorize, set_cleared")
-          optional(:id).value(:string).description("Transaction ID (required for update/delete/split/categorize/set_cleared)")
+          optional(:transaction_id).value(:string).description("Transaction ID (required for update/delete/split/categorize/set_cleared)")
           optional(:account_id).value(:string).description("Account ID (required for create)")
           optional(:amount).filled.description("Transaction amount (required for create, optional for update)")
           optional(:date).value(:string).description("Transaction date ISO 8601 (optional for create/update)")
@@ -113,8 +113,8 @@ module SurefinanceMCP
 
         def update_transaction(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          transaction_record = Models::Transaction.find(id)
+          transaction_id = payload.fetch(:transaction_id)
+          transaction_record = Models::Transaction.find(transaction_id)
           ensure_family_access!(transaction_record, family_id)
 
           updates = {}
@@ -152,8 +152,8 @@ module SurefinanceMCP
 
         def delete_transaction(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          transaction_record = Models::Transaction.find(id)
+          transaction_id = payload.fetch(:transaction_id)
+          transaction_record = Models::Transaction.find(transaction_id)
           ensure_family_access!(transaction_record, family_id)
 
           ActiveRecord::Base.transaction do
@@ -162,16 +162,16 @@ module SurefinanceMCP
             transaction_record.destroy!
           end
 
-          { ok: true, result: { deleted: true, resource_id: id, resource_type: "transaction" } }
+          { ok: true, result: { deleted: true, resource_id: transaction_id, resource_type: "transaction" } }
         end
 
         def split_transaction(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
+          transaction_id = payload.fetch(:transaction_id)
           splits = payload.fetch(:splits)
           raise ArgumentError, "splits must be an array" unless splits.is_a?(Array) && splits.any?
 
-          transaction_record = Models::Transaction.find(id)
+          transaction_record = Models::Transaction.find(transaction_id)
           ensure_family_access!(transaction_record, family_id)
 
           parent_entry = transaction_record.entry
@@ -214,10 +214,10 @@ module SurefinanceMCP
 
         def categorize_transaction(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
+          transaction_id = payload.fetch(:transaction_id)
           category_id = payload.fetch(:category_id)
 
-          transaction_record = Models::Transaction.find(id)
+          transaction_record = Models::Transaction.find(transaction_id)
           ensure_family_access!(transaction_record, family_id)
           category = Models::Category.find_for_family!(family_id, category_id)
 
@@ -253,10 +253,10 @@ module SurefinanceMCP
 
         def set_cleared(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
+          transaction_id = payload.fetch(:transaction_id)
           cleared = payload.fetch(:cleared)
 
-          transaction_record = Models::Transaction.find(id)
+          transaction_record = Models::Transaction.find(transaction_id)
           ensure_family_access!(transaction_record, family_id)
 
           assign_and_save(transaction_record, { cleared: cleared }) if column?(Models::Transaction, :cleared)

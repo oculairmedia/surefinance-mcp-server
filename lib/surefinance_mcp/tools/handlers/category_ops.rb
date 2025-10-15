@@ -18,7 +18,7 @@ module SurefinanceMCP
 
         arguments do
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, move, delete, merge")
-          optional(:id).value(:string).description("Category ID (required for update/move/delete)")
+          optional(:category_id).value(:string).description("Category ID (required for update/move/delete)")
           optional(:name).value(:string).description("Category name (required for create)")
           optional(:classification).value(:string).description("Classification: income or expense (required for create)")
           optional(:parent_id).value(:string).description("Parent category ID (optional for create/move)")
@@ -107,8 +107,8 @@ module SurefinanceMCP
 
         def update_category(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          record = Models::Category.find_for_family!(family_id, id)
+          category_id = payload.fetch(:category_id)
+          record = Models::Category.find_for_family!(family_id, category_id)
 
           permitted = {}
           if payload.key?(:name)
@@ -152,10 +152,10 @@ module SurefinanceMCP
 
         def move_category(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
+          category_id = payload.fetch(:category_id)
           new_parent_id = payload.fetch(:new_parent_id)
 
-          record = Models::Category.find_for_family!(family_id, id)
+          record = Models::Category.find_for_family!(family_id, category_id)
 
           new_parent = nil
           if new_parent_id
@@ -188,10 +188,10 @@ module SurefinanceMCP
 
         def delete_category(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
+          category_id = payload.fetch(:category_id)
           replacement_id = payload[:replacement_category_id]
 
-          record = Models::Category.find_for_family!(family_id, id)
+          record = Models::Category.find_for_family!(family_id, category_id)
           replacement = nil
           moved_txns = 0
 
@@ -231,7 +231,7 @@ module SurefinanceMCP
             record.destroy!
           end
 
-          { ok: true, result: { deleted: true, resource_id: id, resource_type: "category", reassigned_count: moved_txns } }
+          { ok: true, result: { deleted: true, resource_id: category_id, resource_type: "category", reassigned_count: moved_txns } }
         end
 
         def merge_categories(payload)

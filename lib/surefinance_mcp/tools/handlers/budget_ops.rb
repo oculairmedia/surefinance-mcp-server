@@ -19,12 +19,11 @@ module SurefinanceMCP
 
         arguments do
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, delete, assign_category, remove_category, progress")
-          optional(:id).value(:string).description("Budget ID (required for update/delete/progress)")
+          optional(:budget_id).value(:string).description("Budget ID (required for update/delete/progress/assign_category/remove_category)")
           optional(:start_date).value(:string).description("Start date ISO 8601 (optional for create)")
           optional(:month).value(:string).description("Month in format 'Oct-2025' (optional for create)")
           optional(:budgeted_spending).filled.description("Budgeted spending amount (optional for update/assign_category)")
           optional(:expected_income).filled.description("Expected income amount (optional for update)")
-          optional(:budget_id).value(:string).description("Budget ID (required for assign_category/remove_category)")
           optional(:category_id).value(:string).description("Category ID (required for assign_category/remove_category)")
         end
 
@@ -94,8 +93,8 @@ module SurefinanceMCP
         # UPDATE
         def update_budget(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          budget = Models::Budget.find_for_family!(family_id, id)
+          budget_id = payload.fetch(:budget_id)
+          budget = Models::Budget.find_for_family!(family_id, budget_id)
 
           updates = {}
           if payload.key?(:budgeted_spending)
@@ -116,8 +115,8 @@ module SurefinanceMCP
         # DELETE
         def delete_budget(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          budget = Models::Budget.find_for_family!(family_id, id)
+          budget_id = payload.fetch(:budget_id)
+          budget = Models::Budget.find_for_family!(family_id, budget_id)
           resource_id = budget.id
           budget.destroy!
           { ok: true, result: { deleted: true, resource_id: resource_id, resource_type: "budget" } }
@@ -175,8 +174,8 @@ module SurefinanceMCP
         # PROGRESS
         def budget_progress(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          budget = Models::Budget.find_for_family!(family_id, id)
+          budget_id = payload.fetch(:budget_id)
+          budget = Models::Budget.find_for_family!(family_id, budget_id)
 
           # Use stored columns when available; compute percent if both values present
           totals = {

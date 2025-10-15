@@ -19,7 +19,7 @@ module SurefinanceMCP
 
         arguments do
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, cancel, generate_occurrences")
-          optional(:id).value(:string).description("Series ID (required for update/cancel/generate_occurrences)")
+          optional(:series_id).value(:string).description("Series ID (required for update/cancel/generate_occurrences)")
           optional(:name).value(:string).description("Series name (required for create, optional for update)")
           optional(:cadence).value(:string).description("Recurrence cadence: weekly/biweekly/monthly/quarterly/yearly (required for create, optional for update)")
           optional(:starts_on).value(:string).description("Start date ISO 8601 (optional for create/update)")
@@ -76,7 +76,7 @@ module SurefinanceMCP
 
         def update_series(payload)
           family_id = server_context[:family_id]
-          series = Models::RecurringSeries.find(payload.fetch(:id))
+          series = Models::RecurringSeries.find(payload.fetch(:series_id))
           raise ActiveRecord::RecordNotFound unless series.family_id == family_id
 
           updates = {}
@@ -91,7 +91,7 @@ module SurefinanceMCP
 
         def cancel_series(payload)
           family_id = server_context[:family_id]
-          series = Models::RecurringSeries.find(payload.fetch(:id))
+          series = Models::RecurringSeries.find(payload.fetch(:series_id))
           raise ActiveRecord::RecordNotFound unless series.family_id == family_id
           resource_id = series.id
           assign_and_save(series, { canceled: true }) if column?(Models::RecurringSeries, :canceled)
@@ -100,7 +100,7 @@ module SurefinanceMCP
 
         def generate_occurrences(payload)
           family_id = server_context[:family_id]
-          series = Models::RecurringSeries.find(payload.fetch(:id))
+          series = Models::RecurringSeries.find(payload.fetch(:series_id))
           raise ActiveRecord::RecordNotFound unless series.family_id == family_id
 
           until_date = parse_date(payload[:until_date]) || Date.today

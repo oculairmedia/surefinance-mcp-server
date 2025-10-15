@@ -20,7 +20,7 @@ module SurefinanceMCP
 
         arguments do
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, close, reopen, reconcile")
-          optional(:id).value(:string).description("Account ID (required for update/close/reopen/reconcile)")
+          optional(:account_id).value(:string).description("Account ID (required for update/close/reopen/reconcile)")
           optional(:name).value(:string).description("Account name (required for create, optional for update)")
           optional(:type).value(:string).description("Account type (required for create, optional for update)")
           optional(:currency).value(:string).description("Currency code (optional for create/update)")
@@ -109,8 +109,8 @@ module SurefinanceMCP
 
         def update_account(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          account = Models::Account.find_for_family!(family_id, id)
+          account_id = payload.fetch(:account_id)
+          account = Models::Account.find_for_family!(family_id, account_id)
 
           updates = {}
           updates[:name] = payload[:name] if payload.key?(:name)
@@ -123,8 +123,8 @@ module SurefinanceMCP
 
         def close_account(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          account = Models::Account.find_for_family!(family_id, id)
+          account_id = payload.fetch(:account_id)
+          account = Models::Account.find_for_family!(family_id, account_id)
 
           assign_and_save(account, { status: "disabled", closed_on: parse_date(payload[:closed_on]) }) if column?(Models::Account, :status)
           { ok: true, result: { account: serialize_account(account) } }
@@ -132,8 +132,8 @@ module SurefinanceMCP
 
         def reopen_account(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
-          account = Models::Account.find_for_family!(family_id, id)
+          account_id = payload.fetch(:account_id)
+          account = Models::Account.find_for_family!(family_id, account_id)
 
           assign_and_save(account, { status: "active", closed_on: nil }) if column?(Models::Account, :status)
           { ok: true, result: { account: serialize_account(account) } }
@@ -141,11 +141,11 @@ module SurefinanceMCP
 
         def reconcile_account(payload)
           family_id = server_context[:family_id]
-          id = payload.fetch(:id)
+          account_id = payload.fetch(:account_id)
           statement_date = parse_date(payload.fetch(:statement_date))
           statement_balance = coerce_decimal(payload.fetch(:statement_balance), field_name: "statement_balance")
 
-          account = Models::Account.find_for_family!(family_id, id)
+          account = Models::Account.find_for_family!(family_id, account_id)
 
           current_balance = account.respond_to?(:current_balance) ? account.current_balance.to_f : account[:balance].to_f
           diff = (statement_balance.to_f - current_balance)

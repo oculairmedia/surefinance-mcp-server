@@ -17,7 +17,7 @@ module SurefinanceMCP
 
         arguments do
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: create, update, delete, run")
-          optional(:id).value(:string).description("Rule ID (required for update/delete/run)")
+          optional(:rule_id).value(:string).description("Rule ID (required for update/delete/run)")
           optional(:name).value(:string).description("Rule name (required for create, optional for update)")
           optional(:description).value(:string).description("Rule description (optional for create/update)")
         end
@@ -67,7 +67,7 @@ module SurefinanceMCP
 
         def update_rule(payload)
           family_id = server_context[:family_id]
-          rule = Models::Rule.find(payload.fetch(:id))
+          rule = Models::Rule.find(payload.fetch(:rule_id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
 
           updates = {}
@@ -80,7 +80,7 @@ module SurefinanceMCP
 
         def delete_rule(payload)
           family_id = server_context[:family_id]
-          rule = Models::Rule.find(payload.fetch(:id))
+          rule = Models::Rule.find(payload.fetch(:rule_id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
           resource_id = rule.id
           rule.destroy!
@@ -89,7 +89,7 @@ module SurefinanceMCP
 
         def run_rule(payload)
           family_id = server_context[:family_id]
-          rule = Models::Rule.find(payload.fetch(:id))
+          rule = Models::Rule.find(payload.fetch(:rule_id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
 
           rule.apply

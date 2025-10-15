@@ -23,7 +23,7 @@ module SurefinanceMCP
 
         arguments do
           required(:action).value(:string).value(included_in?: ACTIONS).description("Operation to perform: holdings, tags, or rules management")
-          optional(:id).value(:string).description("Holding/Tag/Rule ID (required for update/delete operations)")
+          optional(:item_id).value(:string).description("Holding/Tag/Rule ID (required for update/delete operations)")
           optional(:account_id).value(:string).description("Account ID (required for create_holding)")
           optional(:security_id).value(:string).description("Security ID (optional for create_holding)")
           optional(:quantity).filled.description("Holding quantity (optional for create/update_holding)")
@@ -117,7 +117,7 @@ module SurefinanceMCP
 
         def update_holding(payload)
           family_id = server_context[:family_id]
-          holding = Models::Holding.find(payload.fetch(:id))
+          holding = Models::Holding.find(payload.fetch(:item_id))
           ensure_family_access!(holding, family_id)
 
           updates = {}
@@ -133,7 +133,7 @@ module SurefinanceMCP
 
         def delete_holding(payload)
           family_id = server_context[:family_id]
-          holding = Models::Holding.find(payload.fetch(:id))
+          holding = Models::Holding.find(payload.fetch(:item_id))
           ensure_family_access!(holding, family_id)
           resource_id = holding.id
           holding.destroy!
@@ -150,7 +150,7 @@ module SurefinanceMCP
 
         def delete_tag(payload)
           family_id = server_context[:family_id]
-          tag = Models::Tag.find(payload.fetch(:id))
+          tag = Models::Tag.find(payload.fetch(:item_id))
           raise ActiveRecord::RecordNotFound unless tag.family_id == family_id
           resource_id = tag.id
           tag.destroy!
@@ -188,7 +188,7 @@ module SurefinanceMCP
 
         def update_rule(payload)
           family_id = server_context[:family_id]
-          rule = Models::Rule.find(payload.fetch(:id))
+          rule = Models::Rule.find(payload.fetch(:item_id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
 
           updates = {}
@@ -199,7 +199,7 @@ module SurefinanceMCP
 
         def delete_rule(payload)
           family_id = server_context[:family_id]
-          rule = Models::Rule.find(payload.fetch(:id))
+          rule = Models::Rule.find(payload.fetch(:item_id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
           resource_id = rule.id
           rule.destroy!
@@ -208,7 +208,7 @@ module SurefinanceMCP
 
         def run_rule(payload)
           family_id = server_context[:family_id]
-          rule = Models::Rule.find(payload.fetch(:id))
+          rule = Models::Rule.find(payload.fetch(:item_id))
           raise ActiveRecord::RecordNotFound unless rule.family_id == family_id
           rule.apply if rule.respond_to?(:apply)
           { ok: true, result: { applied: true } }
