@@ -80,6 +80,8 @@ module SurefinanceMCP
         private
 
         def create_holding(payload)
+          return not_implemented_error("Holdings feature is not yet stable")
+
           family_id = server_context[:family_id]
 
           # Validate required fields
@@ -116,6 +118,8 @@ module SurefinanceMCP
         end
 
         def update_holding(payload)
+          return not_implemented_error("Holdings feature is not yet stable")
+
           family_id = server_context[:family_id]
           holding = Models::Holding.find(payload.fetch(:item_id))
           ensure_family_access!(holding, family_id)
@@ -132,6 +136,8 @@ module SurefinanceMCP
         end
 
         def delete_holding(payload)
+          return not_implemented_error("Holdings feature is not yet stable")
+
           family_id = server_context[:family_id]
           holding = Models::Holding.find(payload.fetch(:item_id))
           ensure_family_access!(holding, family_id)
