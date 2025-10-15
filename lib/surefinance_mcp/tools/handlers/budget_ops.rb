@@ -71,6 +71,8 @@ module SurefinanceMCP
           start_date = parse_start_date(payload)
 
           budget = Models::Budget.for_family(family.id).where(start_date: start_date.beginning_of_month, end_date: start_date.end_of_month).first
+          existed = budget.present?
+
           unless budget
             budget = Models::Budget.new(
               family_id: family.id,
@@ -84,7 +86,9 @@ module SurefinanceMCP
             sync_budget_categories(budget, family)
           end
 
-          { ok: true, result: { budget: serialize_budget(budget) } }
+          result = { budget: serialize_budget(budget) }
+          result[:existed] = true if existed
+          { ok: true, result: result }
         end
 
         # UPDATE
