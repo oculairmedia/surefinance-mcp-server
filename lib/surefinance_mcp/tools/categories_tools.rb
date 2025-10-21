@@ -25,7 +25,10 @@ module SurefinanceMCP
           parameters: {
             type: "object",
             properties: {
-              parent_id: { type: "string" }
+              parent_id: {
+                type: "string",
+                description: "Filter categories by parent category ID"
+              }
             },
             additionalProperties: false
           },

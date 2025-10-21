@@ -25,7 +25,11 @@ module SurefinanceMCP
           parameters: {
             type: "object",
             properties: {
-              period: { type: "string", enum: %w[monthly quarterly yearly] }
+              period: {
+                type: "string",
+                enum: %w[monthly quarterly yearly],
+                description: "Budget period type"
+              }
             },
             additionalProperties: false
           },

@@ -26,7 +26,10 @@ module SurefinanceMCP
           parameters: {
             type: "object",
             properties: {
-              updated_since: { type: "string", format: "date-time" }
+              updated_since: {
+                type: "string",
+                description: "ISO 8601 date-time string (e.g., 2024-01-15T10:30:00Z)"
+              }
             },
             additionalProperties: false
           },
@@ -41,8 +44,15 @@ module SurefinanceMCP
           parameters: {
             type: "object",
             properties: {
-              account_id: { type: "string" },
-              range: { type: "string", enum: %w[30d 90d 1y] }
+              account_id: {
+                type: "string",
+                description: "The unique identifier of the account"
+              },
+              range: {
+                type: "string",
+                enum: %w[30d 90d 1y],
+                description: "Time range for balance history"
+              }
             },
             required: ["account_id"],
             additionalProperties: false

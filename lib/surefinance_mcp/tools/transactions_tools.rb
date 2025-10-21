@@ -26,10 +26,24 @@ module SurefinanceMCP
           parameters: {
             type: "object",
             properties: {
-              account_id: { type: "string" },
-              start_date: { type: "string", format: "date" },
-              end_date: { type: "string", format: "date" },
-              limit: { type: "integer", minimum: 1, maximum: 500 }
+              account_id: {
+                type: "string",
+                description: "Filter transactions by account ID"
+              },
+              start_date: {
+                type: "string",
+                description: "Start date in ISO 8601 format (e.g., 2024-01-15)"
+              },
+              end_date: {
+                type: "string",
+                description: "End date in ISO 8601 format (e.g., 2024-12-31)"
+              },
+              limit: {
+                type: "integer",
+                description: "Maximum number of transactions to return",
+                minimum: 1,
+                maximum: 500
+              }
             },
             additionalProperties: false
           },
@@ -44,9 +58,20 @@ module SurefinanceMCP
           parameters: {
             type: "object",
             properties: {
-              query: { type: "string" },
-              account_id: { type: "string" },
-              limit: { type: "integer", minimum: 1, maximum: 200 }
+              query: {
+                type: "string",
+                description: "Search keyword to match against transaction descriptions"
+              },
+              account_id: {
+                type: "string",
+                description: "Filter results by account ID"
+              },
+              limit: {
+                type: "integer",
+                description: "Maximum number of results to return",
+                minimum: 1,
+                maximum: 200
+              }
             },
             required: ["query"],
             additionalProperties: false
