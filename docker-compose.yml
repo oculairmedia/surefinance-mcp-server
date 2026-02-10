@@ -2,7 +2,9 @@ version: "3.9"
 
 services:
   surefinance-mcp:
-    build: .
+    image: surefinance-mcp-server-surefinance-mcp:latest
+    restart: unless-stopped
+    container_name: surefinance-mcp
     ports:
       - "4332:3500"
     env_file:
@@ -10,12 +12,18 @@ services:
     environment:
       MCP_SERVER_HOST: 0.0.0.0
       MCP_SERVER_PORT: 3500
-      MCP_SERVER_ENV: development
+      MCP_SERVER_ENV: production
       LOG_LEVEL: info
       LOG_FORMAT: json
     networks:
       - sure-finance_sure_net
       - default
+    labels:
+      - homepage.group=AI & Automation
+      - homepage.name=SureFinance MCP
+      - homepage.icon=si-python
+      - homepage.href=http://192.168.50.90:4332
+      - homepage.description=SureFinance Model Context Protocol server
 
 
 networks:
